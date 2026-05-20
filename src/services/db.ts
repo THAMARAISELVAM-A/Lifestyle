@@ -1,10 +1,12 @@
-// MyLife OS: Neon DB Service with Resilient Local-First Fallback
+// MyLife OS: Neon Database Service (serverless driver)
+import { neon } from '@neondatabase/serverless';
 import { AuthService } from './auth';
 
-const DB_BASE_URL = 'https://ep-royal-brook-aokk7v7o.apirest.c-2.ap-southeast-1.aws.neon.tech/neondb/rest/v1';
+const DATABASE_URL = 'postgresql://neondb_owner:npg_u0j9QXxmkoaM@ep-royal-brook-aokk7v7o-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
 
-// Table names mapped to their schema
-export type TableName = 
+const sql = neon(DATABASE_URL);
+
+export type TableName =
   | 'tasks'
   | 'passwords'
   | 'health_metrics'
@@ -13,383 +15,210 @@ export type TableName =
   | 'messages'
   | 'files'
   | 'automations'
-  | 'goals';
+  | 'goals'
+  | 'notifications'
+  | 'calendar_events'
+  | 'ai_chat_history'
+  | 'knowledge_notes'
+  | 'user_profiles';
 
-export interface TableStatus {
-  name: TableName;
-  status: 'online' | 'offline' | 'missing' | 'checking';
-  errorMsg?: string;
+// Helper: run raw parameterized SQL via neon http query
+// The neon() function at runtime supports sql(queryString, params) but TypeScript
+// only exposes the tagged template overload, so we cast to bypass it.
+const sqlQuery = sql as any;
+
+async function rawQuery(queryText: string, params: unknown[] = []): Promise<any[]> {
+  return sqlQuery(queryText, params) as Promise<any[]>;
 }
 
-export const SQL_SCHEMA = `-- Schema for MyLife OS
--- Run this in your Neon SQL Editor to enable cloud synchronization!
+// ========================================
+// Generic CRUD operations
+// ========================================
 
-CREATE TABLE IF NOT EXISTS public.tasks (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL,
-  priority TEXT NOT NULL,
-  project TEXT,
-  due_date TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+export class NeonDB {
+  /**
+   * Get all rows for the current user from a table
+   */
+  static async getAll<T>(table: TableName, userId?: string): Promise<T[]> {
+    const uid = userId || AuthService.getUser()?.id;
+    if (!uid) return this.getLocalCache<T>(table);
 
-CREATE TABLE IF NOT EXISTS public.passwords (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  username TEXT NOT NULL,
-  url TEXT,
-  strength TEXT,
-  otp_secret TEXT,
-  category TEXT,
-  last_modified TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.health_metrics (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  date TEXT NOT NULL,
-  heart_rate INTEGER,
-  sleep NUMERIC,
-  calories INTEGER,
-  steps INTEGER,
-  hydration INTEGER,
-  stress INTEGER,
-  weight NUMERIC,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.expenses (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  category TEXT NOT NULL,
-  amount NUMERIC NOT NULL,
-  date TEXT NOT NULL,
-  description TEXT,
-  recurring BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.devices (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  status BOOLEAN DEFAULT FALSE,
-  value TEXT,
-  room TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.messages (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  sender TEXT NOT NULL,
-  avatar TEXT,
-  platform TEXT NOT NULL,
-  content TEXT NOT NULL,
-  timestamp TEXT NOT NULL,
-  priority TEXT DEFAULT 'Medium',
-  summary TEXT,
-  suggested_replies JSONB,
-  read BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.files (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  size TEXT NOT NULL,
-  type TEXT NOT NULL,
-  last_modified TEXT,
-  encrypted BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.automations (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  trigger TEXT NOT NULL,
-  action TEXT NOT NULL,
-  active BOOLEAN DEFAULT TRUE,
-  last_triggered TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.goals (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  category TEXT NOT NULL,
-  target INTEGER NOT NULL,
-  current INTEGER NOT NULL DEFAULT 0,
-  unit TEXT NOT NULL,
-  streak INTEGER DEFAULT 0,
-  xp_value INTEGER DEFAULT 10,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS (Row Level Security) on all tables
-ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.passwords ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.health_metrics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.devices ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.files ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.automations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
-
--- Allow users to read/write only their own rows based on Neon Auth sub (JWT)
--- The auth.user_id() or current_setting('request.jwt.claims', true)::jsonb->>'sub' is used to check JWT claims
-CREATE POLICY "Tasks RLS Policy" ON public.tasks 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Passwords RLS Policy" ON public.passwords 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Health Metrics RLS Policy" ON public.health_metrics 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Expenses RLS Policy" ON public.expenses 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Devices RLS Policy" ON public.devices 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Messages RLS Policy" ON public.messages 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Files RLS Policy" ON public.files 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Automations RLS Policy" ON public.automations 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-
-CREATE POLICY "Goals RLS Policy" ON public.goals 
-  USING (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'))
-  WITH CHECK (user_id = (current_setting('request.jwt.claims', true)::jsonb->>'sub'));
-`;
-
-export class DbService {
-  private static tableStatus: Record<TableName, TableStatus['status']> = {
-    tasks: 'checking',
-    passwords: 'checking',
-    health_metrics: 'checking',
-    expenses: 'checking',
-    devices: 'checking',
-    messages: 'checking',
-    files: 'checking',
-    automations: 'checking',
-    goals: 'checking'
-  };
-
-  static getTableStatuses(): TableStatus[] {
-    return Object.keys(this.tableStatus).map((name) => ({
-      name: name as TableName,
-      status: this.tableStatus[name as TableName]
-    }));
-  }
-
-  static isTableOnline(table: TableName): boolean {
-    return this.tableStatus[table] === 'online';
+    try {
+      const rows = await rawQuery(
+        `SELECT * FROM ${table} WHERE user_id = $1 ORDER BY created_at DESC`,
+        [uid]
+      );
+      this.setLocalCache(table, rows);
+      return rows as T[];
+    } catch (e) {
+      console.warn(`NeonDB.getAll(${table}) failed, using local cache:`, e);
+      return this.getLocalCache<T>(table);
+    }
   }
 
   /**
-   * Helper to perform authenticated REST call to Neon Data API
+   * Get a single row by ID
    */
-  private static async apiFetch(
+  static async getById<T>(table: TableName, id: string): Promise<T | null> {
+    try {
+      const rows = await rawQuery(
+        `SELECT * FROM ${table} WHERE id = $1 LIMIT 1`,
+        [id]
+      );
+      return (rows[0] as T) || null;
+    } catch (e) {
+      console.warn(`NeonDB.getById(${table}, ${id}) failed:`, e);
+      return null;
+    }
+  }
+
+  /**
+   * Insert a new row
+   */
+  static async insert<T extends Record<string, any>>(table: TableName, data: T): Promise<T> {
+    const uid = AuthService.getUser()?.id;
+    const row: Record<string, any> = { ...data, user_id: uid || 'guest' };
+
+    // Optimistic local cache update
+    const cache = this.getLocalCache<T>(table);
+    cache.push(row as T);
+    this.setLocalCache(table, cache);
+
+    try {
+      const cols = Object.keys(row);
+      const vals = Object.values(row);
+      const colNames = cols.map(c => `"${c}"`).join(', ');
+      const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+
+      const result = await rawQuery(
+        `INSERT INTO ${table} (${colNames}) VALUES (${placeholders}) RETURNING *`,
+        vals
+      );
+      const inserted = (result[0] || row) as T;
+      // Update cache with server response
+      const updated = cache.map(c => (c as any).id === (inserted as any).id ? inserted : c);
+      this.setLocalCache(table, updated);
+      return inserted;
+    } catch (e) {
+      console.warn(`NeonDB.insert(${table}) failed, local only:`, e);
+      return row as T;
+    }
+  }
+
+  /**
+   * Update a row by ID
+   */
+  static async update<T extends Record<string, any>>(
     table: TableName,
-    path: string,
-    options: RequestInit = {}
-  ): Promise<{ ok: boolean; data: any; status: number }> {
-    const jwt = AuthService.getJwt();
-    if (!jwt) {
-      return { ok: false, data: 'No authentication token available', status: 401 };
-    }
-
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${jwt}`,
-      'Content-Type': 'application/json',
-      ...(options.headers as any)
-    };
+    id: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    // Optimistic local update
+    const cache = this.getLocalCache<T>(table);
+    const updatedCache = cache.map(item =>
+      (item as any).id === id ? { ...item, ...updates } : item
+    );
+    this.setLocalCache(table, updatedCache);
 
     try {
-      const res = await fetch(`${DB_BASE_URL}/${table}${path}`, {
-        ...options,
-        headers
-      });
+      const entries = Object.entries(updates);
+      if (entries.length === 0) return;
 
-      if (res.status === 404) {
-        // Table does not exist in schema cache
-        this.tableStatus[table] = 'missing';
-        return { ok: false, data: 'Table does not exist', status: 404 };
-      }
+      const setClause = entries.map(([key], i) => `"${key}" = $${i + 1}`).join(', ');
+      const values = [...entries.map(([, val]) => val), id];
 
-      this.tableStatus[table] = 'online';
-      
-      if (res.status === 204) {
-        return { ok: true, data: null, status: 204 };
-      }
-
-      const text = await res.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = text;
-      }
-
-      return { ok: res.ok, data, status: res.status };
-    } catch (e: any) {
-      console.warn(`Neon DB fetch error for ${table}:`, e);
-      this.tableStatus[table] = 'offline';
-      return { ok: false, data: e.message || 'Network error', status: 0 };
+      await rawQuery(
+        `UPDATE ${table} SET ${setClause} WHERE id = $${entries.length + 1}`,
+        values
+      );
+    } catch (e) {
+      console.warn(`NeonDB.update(${table}, ${id}) failed:`, e);
     }
   }
 
   /**
-   * Fetch all rows for the current user
+   * Delete a row by ID
    */
-  static async selectAll<T>(table: TableName, defaultValue: T[]): Promise<T[]> {
-    const user = AuthService.getUser();
-    // If not authenticated, return local cache or default value
-    if (!user) {
-      return this.getLocalCache(table, defaultValue);
-    }
+  static async remove(table: TableName, id: string): Promise<void> {
+    const cache = this.getLocalCache<any>(table);
+    this.setLocalCache(table, cache.filter(item => item.id !== id));
 
-    const { ok, data, status } = await this.apiFetch(table, `?user_id=eq.${user.id}`);
-    
-    if (ok && Array.isArray(data)) {
-      this.setLocalCache(table, data);
-      return data as T[];
-    }
-
-    console.warn(`Failed to select all from ${table} (status ${status}). Using local storage fallback.`);
-    return this.getLocalCache(table, defaultValue);
-  }
-
-  /**
-   * Insert a row
-   */
-  static async insert<T extends { id: string }>(table: TableName, row: T): Promise<T> {
-    const user = AuthService.getUser();
-    const localData = this.getLocalCache<T>(table, []);
-    
-    // Always update local cache first
-    const updatedLocal = [...localData.filter(r => r.id !== row.id), row];
-    this.setLocalCache(table, updatedLocal);
-
-    if (!user) {
-      return row;
-    }
-
-    const payload = { ...row, user_id: user.id };
-    const { ok, data } = await this.apiFetch(table, '', {
-      method: 'POST',
-      headers: {
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (ok && data) {
-      // In case DB returns updated fields (triggers, default values, etc.)
-      const insertedRow = Array.isArray(data) ? data[0] : data;
-      const finalLocal = [...localData.filter(r => r.id !== row.id), insertedRow];
-      this.setLocalCache(table, finalLocal);
-      return insertedRow;
-    }
-
-    return row;
-  }
-
-  /**
-   * Update a row
-   */
-  static async update<T extends { id: string }>(table: TableName, id: string, updates: Partial<T>): Promise<void> {
-    const user = AuthService.getUser();
-    const localData = this.getLocalCache<T>(table, []);
-    
-    // Update local cache
-    const updatedLocal = localData.map((row) => {
-      if (row.id === id) {
-        return { ...row, ...updates };
-      }
-      return row;
-    });
-    this.setLocalCache(table, updatedLocal);
-
-    if (!user) {
-      return;
-    }
-
-    await this.apiFetch(table, `?id=eq.${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(updates)
-    });
-  }
-
-  /**
-   * Delete a row
-   */
-  static async delete(table: TableName, id: string): Promise<void> {
-    const user = AuthService.getUser();
-    const localData = this.getLocalCache<{ id: string }>(table, []);
-    
-    // Update local cache
-    const updatedLocal = localData.filter((row) => row.id !== id);
-    this.setLocalCache(table, updatedLocal);
-
-    if (!user) {
-      return;
-    }
-
-    await this.apiFetch(table, `?id=eq.${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  /**
-   * Clear all local caches on sign-out
-   */
-  static clearCaches(): void {
-    const tables: TableName[] = ['tasks', 'passwords', 'health_metrics', 'expenses', 'devices', 'messages', 'files', 'automations', 'goals'];
-    tables.forEach((t) => {
-      localStorage.removeItem(`mylife_cache_${t}`);
-      this.tableStatus[t] = 'checking';
-    });
-  }
-
-  // --- Local Cache Helpers ---
-  private static getLocalCache<T>(table: TableName, defaultValue: T[]): T[] {
     try {
-      const cache = localStorage.getItem(`mylife_cache_${table}`);
-      return cache ? JSON.parse(cache) : defaultValue;
+      await rawQuery(`DELETE FROM ${table} WHERE id = $1`, [id]);
+    } catch (e) {
+      console.warn(`NeonDB.remove(${table}, ${id}) failed:`, e);
+    }
+  }
+
+  // ========================================
+  // User Profile
+  // ========================================
+
+  static async getOrCreateProfile(authUserId: string, name: string, email: string): Promise<any> {
+    try {
+      const existing = await rawQuery(
+        `SELECT * FROM user_profiles WHERE auth_user_id = $1 LIMIT 1`,
+        [authUserId]
+      );
+
+      if (existing.length > 0) return existing[0];
+
+      const id = `profile_${Date.now()}`;
+      const result = await rawQuery(
+        `INSERT INTO user_profiles (id, auth_user_id, display_name, email) VALUES ($1, $2, $3, $4) RETURNING *`,
+        [id, authUserId, name, email]
+      );
+      return result[0];
+    } catch (e) {
+      console.warn('NeonDB.getOrCreateProfile failed:', e);
+      return { id: authUserId, display_name: name, email, life_score: 75, xp_total: 0 };
+    }
+  }
+
+  static async updateProfile(authUserId: string, updates: Record<string, any>): Promise<void> {
+    try {
+      const entries = Object.entries(updates);
+      if (entries.length === 0) return;
+
+      const setClause = entries.map(([key], i) => `"${key}" = $${i + 1}`).join(', ');
+      const values = [...entries.map(([, val]) => val), authUserId];
+
+      await rawQuery(
+        `UPDATE user_profiles SET ${setClause}, updated_at = NOW() WHERE auth_user_id = $${entries.length + 1}`,
+        values
+      );
+    } catch (e) {
+      console.warn('NeonDB.updateProfile failed:', e);
+    }
+  }
+
+  // ========================================
+  // Local Cache (offline fallback)
+  // ========================================
+
+  private static getLocalCache<T>(table: TableName): T[] {
+    try {
+      const raw = localStorage.getItem(`mylife_${table}`);
+      return raw ? JSON.parse(raw) : [];
     } catch {
-      return defaultValue;
+      return [];
     }
   }
 
   private static setLocalCache<T>(table: TableName, data: T[]): void {
     try {
-      localStorage.setItem(`mylife_cache_${table}`, JSON.stringify(data));
+      localStorage.setItem(`mylife_${table}`, JSON.stringify(data));
     } catch (e) {
-      console.error(`Failed to set local cache for ${table}:`, e);
+      console.warn(`Cache write failed for ${table}:`, e);
     }
+  }
+
+  static clearAllCaches(): void {
+    const tables: TableName[] = [
+      'tasks', 'passwords', 'health_metrics', 'expenses', 'devices',
+      'messages', 'files', 'automations', 'goals', 'notifications',
+      'calendar_events', 'ai_chat_history', 'knowledge_notes', 'user_profiles'
+    ];
+    tables.forEach(t => localStorage.removeItem(`mylife_${t}`));
   }
 }

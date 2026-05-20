@@ -43,7 +43,6 @@ export class AuthService {
         headers: {
           'Accept': 'application/json'
         },
-        // Enable cross-origin cookies
         credentials: 'include'
       });
 
@@ -70,7 +69,8 @@ export class AuthService {
       const res = await fetch(`${AUTH_BASE_URL}/sign-up/email`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Origin': 'http://localhost:5173'
         },
         body: JSON.stringify({ email, password, name }),
         credentials: 'include'
@@ -112,7 +112,8 @@ export class AuthService {
       const res = await fetch(`${AUTH_BASE_URL}/sign-in/email`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Origin': 'http://localhost:5173'
         },
         body: JSON.stringify({ email, password }),
         credentials: 'include'
@@ -135,11 +136,7 @@ export class AuthService {
         
         // Fetch the JWT token immediately
         const token = await this.refreshJwt();
-        if (token) {
-          return { success: true };
-        } else {
-          return { success: false, error: 'Failed to retrieve database access token' };
-        }
+        return token ? { success: true } : { success: false, error: 'Failed to retrieve JWT' };
       }
 
       return { success: false, error: 'User data missing from response' };

@@ -9,11 +9,17 @@ import { AICopilot } from './components/AICopilot';
 import { SmartHome } from './components/SmartHome';
 import { LifeAnalytics } from './components/LifeAnalytics';
 import { OtherModules } from './components/OtherModules';
+import { AuthModal } from './components/AuthModal';
+import { useAuth } from './context/AuthContext';
+import { NeonDB } from './services/db';
 import type { Task, PasswordEntry, HealthMetric, Expense, SmartDevice, Message, CloudFile, AutomationRule, Goal } from './types';
-import { Bell, Wifi, Search, Cpu } from 'lucide-react';
+import { Bell, Wifi, WifiOff, Search, Cpu, LogOut } from 'lucide-react';
 
 
 export default function App() {
+  const { isAuthenticated, user, loading, signOut, refresh } = useAuth();
+  const [showAuthModal, setShowAuthModal] = React.useState(false);
+  const [dbConnected, setDbConnected] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<string>('dashboard');
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -26,8 +32,10 @@ export default function App() {
   ]);
 
   const addTask = (newTask: Omit<Task, 'id'>) => {
-    setTasks(prev => [...prev, { ...newTask, id: `t_${Date.now()}` }]);
-    addNotification('Task Added', `Successfully scheduled focus task: ${newTask.title}`);
+    const task = { ...newTask, id: `t_${Date.now()}` };
+    setTasks(prev => [...prev, task]);
+    NeonDB.insert('tasks', task);
+    addNotification('Task Added', `Successfully scheduled focus task: ${task.title}`);
   };
 
   const toggleTaskStatus = (id: string) => {
@@ -42,10 +50,12 @@ export default function App() {
 
   const updateTaskStatus = (id: string, status: Task['status']) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+    NeonDB.update('tasks', id, { status });
   };
 
   const deleteTask = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+    NeonDB.remove('tasks', id);
   };
 
   // 2. Seed Password Entries State
@@ -56,8 +66,10 @@ export default function App() {
   ]);
 
   const addPasswordEntry = (newEntry: Omit<PasswordEntry, 'id' | 'lastModified'>) => {
-    setPasswords(prev => [...prev, { ...newEntry, id: `p_${Date.now()}`, lastModified: 'Just now' }]);
-    addNotification('Vault Updated', `Encrypted credentials stored for ${newEntry.title}`);
+    const entry = { ...newEntry, id: `p_${Date.now()}`, lastModified: 'Just now' };
+    setPasswords(prev => [...prev, entry]);
+    NeonDB.insert('passwords', entry);
+    addNotification('Vault Updated', `Encrypted credentials stored for ${entry.title}`);
   };
 
   // 3. Seed Health Biometrics State
@@ -89,12 +101,15 @@ export default function App() {
   ]);
 
   const addExpense = (newExp: Omit<Expense, 'id' | 'date'>) => {
-    setExpenses(prev => [...prev, { ...newExp, id: `f_${Date.now()}`, date: 'Just now' }]);
-    addNotification('Ledger Updated', `Recorded transaction: $${newExp.amount} at ${newExp.description}`);
+    const expense = { ...newExp, id: `f_${Date.now()}`, date: 'Just now' };
+    setExpenses(prev => [...prev, expense]);
+    NeonDB.insert('expenses', expense);
+    addNotification('Ledger Updated', `Recorded transaction: $${expense.amount} at ${expense.description}`);
   };
 
   const deleteExpense = (id: string) => {
     setExpenses(prev => prev.filter(e => e.id !== id));
+    NeonDB.remove('expenses', id);
   };
 
   // 5. Seed Smart Home IoT Switches State
@@ -175,6 +190,59 @@ export default function App() {
     ]);
   };
 
+  // === NEON DB: Load data on auth ===
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      setShowAuthModal(true);
+    }
+  }, [loading, isAuthenticated]);
+
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      setShowAuthModal(false);
+      loadAllData();
+    }
+  }, [isAuthenticated, user]);
+
+  const loadAllData = async () => {
+    try {
+      const [dbTasks, dbPasswords, dbExpenses, dbDevices, dbMessages, dbFiles, dbAutomations, dbGoals] = await Promise.all([
+        NeonDB.getAll<Task>('tasks'),
+        NeonDB.getAll<PasswordEntry>('passwords'),
+        NeonDB.getAll<Expense>('expenses'),
+        NeonDB.getAll<SmartDevice>('devices'),
+        NeonDB.getAll<Message>('messages'),
+        NeonDB.getAll<CloudFile>('files'),
+        NeonDB.getAll<AutomationRule>('automations'),
+        NeonDB.getAll<Goal>('goals'),
+      ]);
+      if (dbTasks.length) setTasks(dbTasks);
+      if (dbPasswords.length) setPasswords(dbPasswords);
+      if (dbExpenses.length) setExpenses(dbExpenses);
+      if (dbDevices.length) setDevices(dbDevices);
+      if (dbMessages.length) setMessages(dbMessages);
+      if (dbFiles.length) setFiles(dbFiles);
+      if (dbAutomations.length) setAutomations(dbAutomations);
+      if (dbGoals.length) setGoals(dbGoals);
+      setDbConnected(true);
+      addNotification('Neon DB Synced', 'All data loaded from cloud database.');
+    } catch (e) {
+      console.warn('DB load failed, using seed data:', e);
+      setDbConnected(false);
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    refresh();
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    NeonDB.clearAllCaches();
+    setShowAuthModal(true);
+  };
+
   // 11. Overall LifeScore State
   const [lifeScore, setLifeScore] = React.useState(82);
 
@@ -232,6 +300,15 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-cyber-bg overflow-x-hidden text-slate-100">
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal
+          onSuccess={handleAuthSuccess}
+          onClose={() => setShowAuthModal(false)}
+          canCancel={true}
+        />
+      )}
       
       {/* Sidebar navigation */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -263,10 +340,23 @@ export default function App() {
           <div className="flex items-center gap-4">
             
             {/* Sync online badge */}
-            <span className="flex items-center gap-1 text-[10px] font-mono text-cyber-green font-bold bg-cyber-green/10 border border-cyber-green/20 px-2 py-0.5 rounded-full">
-              <Wifi size={10} />
-              SYNCED
-            </span>
+            {isAuthenticated ? (
+              <span className="flex items-center gap-1 text-[10px] font-mono text-cyber-green font-bold bg-cyber-green/10 border border-cyber-green/20 px-2 py-0.5 rounded-full">
+                <Wifi size={10} />
+                {dbConnected ? 'NEON SYNCED' : 'LOCAL'}
+              </span>
+            ) : (
+              <button onClick={() => setShowAuthModal(true)} className="flex items-center gap-1 text-[10px] font-mono text-cyber-yellow font-bold bg-cyber-yellow/10 border border-cyber-yellow/20 px-2 py-0.5 rounded-full cursor-pointer hover:bg-cyber-yellow/20 transition-colors">
+                <WifiOff size={10} />
+                SIGN IN
+              </button>
+            )}
+
+            {isAuthenticated && (
+              <button onClick={handleSignOut} className="p-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-cyber-red hover:bg-cyber-red/10 cursor-pointer transition-colors" title="Sign Out">
+                <LogOut size={14} />
+              </button>
+            )}
 
             {/* Notification Bell */}
             <div className="relative">

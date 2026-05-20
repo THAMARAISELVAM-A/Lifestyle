@@ -5,6 +5,7 @@ import {
   Home, MessageCircle, HardDrive, Zap, ShieldAlert, 
   Dumbbell, Fingerprint, BarChart3, ChevronLeft, ChevronRight
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -13,6 +14,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const [collapsed, setCollapsed] = React.useState(false);
+  const { user, isAuthenticated } = useAuth();
 
   const menuGroups = [
     {
@@ -139,15 +141,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           <div className="relative">
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyber-purple via-cyber-blue to-cyber-green p-0.5 shadow-neon-blue">
               <div className="w-full h-full rounded-full bg-cyber-bg overflow-hidden flex items-center justify-center">
-                <span className="text-xs font-bold text-white">USER</span>
+                <span className="text-xs font-bold text-white">{isAuthenticated && user?.name ? user.name.charAt(0).toUpperCase() : 'G'}</span>
               </div>
             </div>
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-cyber-green rounded-full border border-cyber-bg animate-pulse"></div>
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate leading-none text-white">Alex Mercer</p>
-              <span className="text-[10px] text-cyber-green font-mono">Sync Mode: ONLINE</span>
+              <p className="text-sm font-semibold truncate leading-none text-white">{isAuthenticated && user?.name ? user.name : 'Guest Mode'}</p>
+              <span className={`text-[10px] font-mono ${isAuthenticated ? 'text-cyber-green' : 'text-cyber-yellow'}`}>{isAuthenticated ? 'Sync: NEON CLOUD' : 'Sync: OFFLINE'}</span>
             </div>
           )}
         </div>
