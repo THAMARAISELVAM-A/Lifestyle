@@ -40,7 +40,7 @@ export class NeonDB {
    * Get all rows for the current user from a table
    */
   static async getAll<T>(table: TableName, userId?: string): Promise<T[]> {
-    const uid = userId || AuthService.getUser()?.id;
+    const uid = userId ?? this._authenticatedUserId();
     if (!uid) return this.getLocalCache<T>(table);
 
     try {
@@ -72,11 +72,28 @@ export class NeonDB {
     }
   }
 
+  // ── Private helper ───────────────────────────────────────────────────────────
+
   /**
-   * Insert a new row
+   * Safely resolves the current authenticated user id with undefined fallback.
+   * Returns `undefined` during race-conditions where the Session token is
+   * not yet enrolled in the auth store, instead of resolving to `null`.
+   */
+  private static _authenticatedUserId(): string | undefined {
+    try {
+      const u = AuthService.getUser();
+      return u?.id ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Insert a new row. Caller should include user_id in the data object
+   * when operating in authenticated mode; a guest fallback is used otherwise.
    */
   static async insert<T extends Record<string, any>>(table: TableName, data: T): Promise<T> {
-    const uid = AuthService.getUser()?.id;
+    const uid = (data as any).user_id ?? this._authenticatedUserId();
     const row: Record<string, any> = { ...data, user_id: uid || 'guest' };
 
     // Optimistic local cache update
@@ -85,13 +102,12 @@ export class NeonDB {
     this.setLocalCache(table, cache);
 
     try {
-      const cols = Object.keys(row);
-      const vals = Object.values(row);
-      const colNames = cols.map(c => `"${c}"`).join(', ');
+      const cols = Object.keys(row).map(c => `"${c}"`);      // always quote column names
       const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+      const vals = Object.values(row);
 
       const result = await rawQuery(
-        `INSERT INTO ${table} (${colNames}) VALUES (${placeholders}) RETURNING *`,
+        `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders}) RETURNING *`,
         vals
       );
       const inserted = (result[0] || row) as T;

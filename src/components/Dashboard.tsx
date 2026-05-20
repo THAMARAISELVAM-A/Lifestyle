@@ -21,6 +21,7 @@ interface DashboardProps {
   aiRecommendations: string[];
   runOptimization: () => void;
   isOptimizing: boolean;
+  userName?: string;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -36,7 +37,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   lifeScore,
   aiRecommendations,
   runOptimization,
-  isOptimizing
+  isOptimizing,
+  userName
 }) => {
   const activeTasks = tasks.filter(t => t.status !== 'done').slice(0, 3);
   const activeDevices = devices.slice(0, 3);
@@ -73,7 +75,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-            Welcome back, Alex
+              Welcome back, {userName ?? 'Alex'}
           </h2>
           <p className="text-cyber-muted text-sm mt-1 flex items-center gap-1.5 font-mono">
             <Clock size={14} className="text-cyber-purple" />

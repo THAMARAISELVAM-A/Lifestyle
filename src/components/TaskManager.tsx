@@ -37,7 +37,7 @@ export const TaskManager: React.FC<TaskManagerProps> = ({
   const [isTrackingRunning, setIsTrackingRunning] = React.useState(false);
 
   React.useEffect(() => {
-    let timer: any;
+    let timer: ReturnType<typeof setInterval>;
     if (isTrackingRunning && trackingTaskId) {
       timer = setInterval(() => {
         setTrackingTime(prev => prev + 1);
@@ -214,7 +214,7 @@ export const TaskManager: React.FC<TaskManagerProps> = ({
               <label className="text-[10px] text-cyber-muted font-mono uppercase">Priority Level</label>
               <select
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
+                onChange={(e) => setPriority(e.target.value as Task['priority'])}
                 className="w-full px-3 py-2 rounded-xl text-xs glass-input"
               >
                 <option value="low">Low Priority</option>

@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { AuthService } from '../services/auth';
+import type { UserProfile } from '../services/auth';
+import { NeonDB } from '../services/db';
 
 type AuthContextType = {
   isAuthenticated: boolean;
-  user: any; // replace with proper UserProfile type if needed
+  user: UserProfile | null;
   loading: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -14,13 +16,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   const refresh = async () => {
     setLoading(true);
-    const ok = await AuthService.checkSession();
+    const ok    = await AuthService.checkSession();
     setIsAuthenticated(ok);
-    setUser(AuthService.getUser());
+    const profile = AuthService.getUser();
+    setUser(profile);
+
+    // After a successful session check, upsert the user profile row in Neon DB
+    if (ok && profile && typeof profile.id === 'string') {
+      try {
+        await NeonDB.getOrCreateProfile(profile.id, profile.name, profile.email);
+      } catch {
+        // Profile upsert is best-effort — never block the UI
+      }
+    }
+
     setLoading(false);
   };
 

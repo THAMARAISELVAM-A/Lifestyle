@@ -9,6 +9,8 @@ import { AICopilot } from './components/AICopilot';
 import { SmartHome } from './components/SmartHome';
 import { LifeAnalytics } from './components/LifeAnalytics';
 import { OtherModules } from './components/OtherModules';
+import { CalendarSync } from './components/CalendarSync';
+import { HabitTracker } from './components/HabitTracker';
 import { AuthModal } from './components/AuthModal';
 import { useAuth } from './context/AuthContext';
 import { NeonDB } from './services/db';
@@ -243,7 +245,7 @@ export default function App() {
     setShowAuthModal(true);
   };
 
-  // 11. Overall LifeScore State
+  const userName = user?.name ?? 'Alex';
   const [lifeScore, setLifeScore] = React.useState(82);
 
   // 12. AI Recommendations Banner
@@ -416,6 +418,7 @@ export default function App() {
               aiRecommendations={aiRecommendations}
               runOptimization={runOptimization}
               isOptimizing={isOptimizing}
+              userName={user?.name}
             />
           )}
 
@@ -470,6 +473,14 @@ export default function App() {
             <LifeAnalytics 
               onScoreUpdate={setLifeScore}
             />
+          )}
+
+          {activeTab === 'calendar' && (
+            <CalendarSync />
+          )}
+
+          {activeTab === 'habits' && (
+            <HabitTracker />
           )}
 
           {/* Render remaining modular tabs using OtherModules */}

@@ -284,7 +284,7 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry 
                   <label className="text-[10px] text-cyber-muted font-mono uppercase">Category</label>
                   <select
                     value={newCat}
-                    onChange={(e) => setNewCat(e.target.value as any)}
+                    onChange={(e) => setNewCat(e.target.value as PasswordEntry['category'])}
                     className="w-full px-3 py-2 rounded-xl text-xs glass-input"
                   >
                     <option value="logins">Login Credentials</option>

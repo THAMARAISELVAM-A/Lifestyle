@@ -5,6 +5,8 @@ import {
   PhoneCall, Dumbbell, Apple, Fingerprint, Key,
   HardDrive, Folder, Lock, Unlock, ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { NeonDB } from '../services/db';
 import type { Message, CloudFile, AutomationRule } from '../types';
 
 interface OtherModulesProps {
@@ -28,7 +30,9 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
   toggleAutomation,
   runAutomation
 }) => {
+  const { isAuthenticated, user } = useAuth();   // ← auth context
   const [toast, setToast] = React.useState<string | null>(null);
+  const [notesLoaded, setNotesLoaded] = React.useState(false);  // ← guard against double-load
 
   const triggerToast = (msg: string) => {
     setToast(msg);
@@ -41,9 +45,64 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
     { id: '2', title: 'Weekly Gym split notes', content: 'Push, Pull, Legs routine. High intensity focus. Combine with calorie tracking target of 2,400 kcal per day for hypertrophy goals.', lastModified: 'May 19' },
     { id: '3', title: 'Tax deduction list', content: 'Scan all receipts for cloud servers, travel, and internet configurations to use during tax computations next year.', lastModified: 'May 15' }
   ]);
-  const [selectedNoteId, setSelectedNoteId] = React.useState('1');
+  const [selectedNoteId, setSelectedNoteId] = React.useState<string>('1');
   const [noteSearch, setNoteSearch] = React.useState('');
   const activeNote = notes.find(n => n.id === selectedNoteId);
+
+  // Load persisted notes from Neon DB once on mount (authenticated users only)
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadNotes() {
+      if (!isAuthenticated || !user?.id || notesLoaded) return;
+      try {
+        // @ts-expect-error NeonDB.getAll for dynamic table name — DB service types don't include knowledge_notes yet
+        const rows = await NeonDB.getAll<NoteRecord>('knowledge_notes', user.id);
+        if (cancelled) return;
+        if (rows.length > 0) {
+          setNotes(rows.map((r: NoteRecord, idx: number) => ({
+            id: r.id ?? `n_${idx}`,
+            title: r.title ?? 'Untitled',
+            content: r.content ?? '',
+            lastModified: r.updated_at ? new Date(r.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Just now',
+          })));
+        }
+        setNotesLoaded(true);
+      } catch {
+        // Keep seed state silently
+      }
+    }
+    loadNotes();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id]);
+
+  // Persist edited note to Neon (debounced 2 s)
+  React.useEffect(() => {
+    if (!isAuthenticated || !user?.id || !notesLoaded) return;
+    const active = notes.find(n => n.id === selectedNoteId);
+    if (!active) return;
+    const timer = setTimeout(() => {
+      // Upsert: insert or update the note in Neon
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        NeonDB.insert('knowledge_notes', {
+          user_id: user!.id,
+          id: active.id,
+          title: active.title,
+          content: active.content,
+          category: 'general',
+          tags: [],
+          pinned: false,
+        } as any) // NeonDB insert does not fully include knowledge_notes in its TSL cleanup
+        .catch(() => {});
+      } catch { /* best-effort */ }
+    }, 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes, selectedNoteId, isAuthenticated, user?.id, notesLoaded]);
+
+  // Minimal interpersonal note record for DB round-trips
+  interface NoteRecord { id: string; title: string; content: string; category?: string; tags: string[]; pinned: boolean; updated_at?: string; created_at?: string; }
 
   const handleEditNote = (val: string) => {
     setNotes(prev => prev.map(n => n.id === selectedNoteId ? { ...n, content: val, lastModified: 'Just now' } : n));
@@ -95,7 +154,7 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
   const [sosCountdown, setSosCountdown] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    let timer: any;
+    let timer: ReturnType<typeof setInterval>;
     if (sosCountdown !== null && sosCountdown > 0) {
       timer = setInterval(() => {
         setSosCountdown(prev => (prev !== null ? prev - 1 : null));
