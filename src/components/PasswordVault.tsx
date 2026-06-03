@@ -124,12 +124,12 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
     return (
       <div className="max-w-md mx-auto my-12 glass-panel rounded-2xl border border-cyber-border shadow-glass-lg overflow-hidden hologram-scanline">
         <div className="p-8 text-center space-y-6">
-          <div className="w-16 h-16 rounded-full bg-cyber-pink/10 border border-cyber-pink/30 flex items-center justify-center mx-auto shadow-neon-pink/15">
+          <div className="w-16 h-16 rounded-full bg-cyber-pink/10 border border-cyber-pink/30 flex items-center justify-center mx-auto shadow-neon-pink">
             <Lock className="text-cyber-pink animate-pulse" size={28} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-white">Vault Encrypted</h2>
-            <p className="text-cyber-muted text-xs mt-1">Zero-knowledge local database. Please decrypt with Master Passphrase.</p>
+            <h2 className="text-2xl font-bold font-mono tracking-tight text-white text-glow-pink">VAULT ENCRYPTED</h2>
+            <p className="text-cyber-pink text-xs mt-1 font-mono">Zero-knowledge local database. Decrypt with Master Passphrase.</p>
           </div>
           <form onSubmit={handleUnlock} className="space-y-4">
             <div>
@@ -161,11 +161,11 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
       {/* Header and Sync State */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-2xl font-bold font-mono tracking-tight text-white flex items-center gap-2 text-glow-pink">
             <ShieldCheck className="text-cyber-pink" />
-            Secure Password Vault
+            SECURE PASSWORD VAULT
           </h2>
-          <p className="text-cyber-muted text-xs">AES-256 hardware accelerated local encryption.</p>
+          <p className="text-cyber-pink text-xs font-mono">AES-256 hardware accelerated local encryption.</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -187,7 +187,7 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
         
         {/* Left Side: Accounts list & Search */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="glass-panel rounded-2xl p-4 border border-cyber-border space-y-3">
+          <div className="glass-panel rounded-2xl p-4 border border-cyber-pink/20 bg-black/60 space-y-3">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-3 text-cyber-muted" size={16} />
@@ -219,7 +219,7 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
           </div>
 
           {/* Entries list */}
-          <div className="glass-panel rounded-2xl border border-cyber-border p-2 space-y-1 overflow-y-auto max-h-[460px]">
+          <div className="glass-panel rounded-2xl border border-cyber-pink/20 bg-black/60 p-2 space-y-1 overflow-y-auto max-h-[460px] custom-scrollbar">
             {filteredEntries.length > 0 ? (
               filteredEntries.map(entry => {
                 const isSelected = selectedEntryId === entry.id;
@@ -232,8 +232,8 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
                     }}
                     className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition-all cursor-pointer ${
                       isSelected 
-                        ? 'bg-cyber-pink/15 border border-cyber-pink/30 text-white' 
-                        : 'hover:bg-white/5 text-slate-400 hover:text-slate-200 border border-transparent'
+                        ? 'bg-cyber-pink/20 border border-cyber-pink text-white shadow-neon-pink' 
+                        : 'bg-black/40 hover:bg-black/80 text-slate-400 hover:text-slate-200 border border-cyber-pink/10 hover:border-cyber-pink/30'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -347,11 +347,13 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
 
           {/* Details Panel */}
           {activeEntry ? (
-            <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass space-y-6">
-              <div className="flex justify-between items-start">
+            <div className="glass-panel rounded-2xl p-6 border border-cyber-pink/20 bg-black/60 shadow-glass space-y-6 relative overflow-hidden">
+              {/* Scanline overlay for active entry */}
+              <div className="hologram-scanline absolute inset-0 pointer-events-none opacity-50 z-0" />
+              <div className="relative z-10 flex justify-between items-start">
                 <div>
-                  <h3 className="text-xl font-bold text-white">{activeEntry.title}</h3>
-                  <a href={activeEntry.url} target="_blank" rel="noreferrer" className="text-xs text-cyber-blue hover:underline mt-1 block">
+                  <h3 className="text-xl font-bold font-mono text-white text-glow-pink uppercase">{activeEntry.title}</h3>
+                  <a href={activeEntry.url} target="_blank" rel="noreferrer" className="text-[10px] font-mono text-cyber-blue hover:text-cyber-cyan hover:underline mt-1 block">
                     {activeEntry.url}
                   </a>
                 </div>
@@ -448,10 +450,10 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
               )}
 
               {/* Zero-knowledge description details */}
-              <div className="flex items-start gap-2 bg-black/40 border border-white/5 rounded-xl p-3.5 text-xs text-cyber-muted leading-relaxed">
+              <div className="relative z-10 flex items-start gap-2 bg-black/80 border border-cyber-pink/20 rounded-xl p-3.5 text-[10px] font-mono text-cyber-pink/80 leading-relaxed">
                 <Key size={16} className="text-cyber-pink shrink-0 mt-0.5 animate-pulse" />
                 <p>
-                  This vault employs a zero-knowledge structure. Decrypted entries exist strictly in memory. The corresponding raw keys are derived from your Master Password using PBKDF2 with 310,000 iterations and never sent to cloud sync instances.
+                  Zero-knowledge structure. Decrypted entries exist strictly in memory. Raw keys derived via PBKDF2 (310k iterations) - NO CLOUD SYNC.
                 </p>
               </div>
             </div>
@@ -462,8 +464,8 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry,
           )}
 
           {/* Password Generator Widget */}
-          <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass space-y-4">
-            <h3 className="font-semibold text-base text-slate-100">Entropy Password Generator</h3>
+          <div className="glass-panel rounded-2xl p-6 border border-cyber-pink/20 bg-black/60 shadow-glass space-y-4 relative overflow-hidden">
+            <h3 className="font-semibold font-mono text-base text-cyber-pink uppercase tracking-wider relative z-10">Entropy Generator</h3>
             
             <div className="space-y-4">
               <div className="flex gap-2 items-center bg-white/5 border border-white/5 rounded-xl p-3 justify-between">

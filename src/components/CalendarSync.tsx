@@ -144,64 +144,80 @@ export const CalendarSync: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-cyber-bg text-slate-100 p-6">
+    <div className="flex flex-col h-full bg-black/90 text-cyber-purple font-mono p-6 relative overflow-hidden">
+      {/* Background Grid for tactical overlay effect */}
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(168,85,247,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.05)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+
       {/* Header Row */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <CalendarIcon className="h-5 w-5 text-cyber-blue" />
+      <div className="relative z-10 flex items-center justify-between mb-6 border-b border-cyber-purple/40 pb-4">
+        <div className="flex items-center space-x-4">
+          <div className="p-2 border border-cyber-purple/40 bg-cyber-purple/10 rounded-sm">
+            <CalendarIcon className="h-6 w-6 text-cyber-pink animate-pulse" />
+          </div>
           <div>
-            <h2 className="text-xl font-bold">Smart Calendar & Planner</h2>
-            <p className="text-sm text-cyber-muted">AI-powered scheduling synced with Google Calendar</p>
+            <h2 className="text-2xl font-bold tracking-widest text-cyber-pink uppercase drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">Timeline Sync</h2>
+            <p className="text-xs text-cyber-purple/70 tracking-widest">TACTICAL SCHEDULE OVERLAY [ACTIVE]</p>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <button onClick={prevMonth} className="p-2 rounded hover:bg-white/10">
-            <ChevronLeft className="h-4 w-4 text-cyber-blue" />
+        <div className="flex items-center space-x-4 border border-cyber-purple/40 bg-black/80 px-4 py-2 rounded-sm shadow-[0_0_10px_rgba(168,85,247,0.2)]">
+          <button onClick={prevMonth} className="p-1 hover:text-cyber-pink transition-colors">
+            <ChevronLeft className="h-5 w-5" />
           </button>
-          <span>{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
-          <button onClick={nextMonth} className="p-2 rounded hover:bg-white/10">
-            <ChevronRight className="h-4 w-4 text-cyber-blue" />
+          <span className="text-lg tracking-widest uppercase">{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
+          <button onClick={nextMonth} className="p-1 hover:text-cyber-pink transition-colors">
+            <ChevronRight className="h-5 w-5" />
           </button>
         </div>
       </div>
 
       {/* Search + Quick Filters */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
-        <div className="flex items-center space-x-2">
-          <input
-            type="text"
-            placeholder="Search events..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="glass-input w-full max-w-xs"
-          />
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
+        <div className="flex items-center space-x-2 w-full md:w-auto">
+          <div className="relative w-full max-w-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Zap className="h-4 w-4 text-cyber-purple/60" />
+            </div>
+            <input
+              type="text"
+              placeholder="SEARCH PROTOCOLS..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink placeholder-cyber-purple/50 focus:outline-none focus:border-cyber-pink pl-10 pr-4 py-2 text-sm uppercase tracking-wider"
+            />
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">All</button>
-          <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">Work</button>
-          <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">Personal</button>
-          <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">Health</button>
-          <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">Finance</button>
+          {['All', 'Work', 'Personal', 'Health', 'Finance'].map((filter) => (
+            <button key={filter} className="px-4 py-1.5 text-xs uppercase tracking-wider border border-cyber-purple/40 bg-black/60 hover:bg-cyber-purple/20 hover:border-cyber-pink hover:text-cyber-pink transition-all">
+              {filter}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 overflow-auto">
         {/* Left: Calendar and Events List */}
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 flex flex-col space-y-6">
           {/* Calendar Grid */}
-          <div className="glass-panel rounded-xl p-4 mb-6">
+          <div className="border border-cyber-purple/40 bg-black/80 shadow-[0_0_15px_rgba(168,85,247,0.15)] p-4 relative">
+            {/* Corner Accents */}
+            <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-cyber-pink"></div>
+            <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-cyber-pink"></div>
+            <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-cyber-pink"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-cyber-pink"></div>
+
             {/* Day names */}
-            <div className="grid grid-cols-7 text-center text-sm text-cyber-muted mb-4">
+            <div className="grid grid-cols-7 text-center text-xs tracking-widest text-cyber-purple/70 mb-2 border-b border-cyber-purple/30 pb-2 uppercase">
               {dayNames.map(day => (
                 <div key={day}>{day}</div>
               ))}
             </div>
             {/* Day slots */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1">
               {/* Empty cells for the first day offset */}
               {Array.from({ length: firstDayOfMonth }, (_, i) => (
-                <div key={i} className="h-12"></div>
+                <div key={i} className="min-h-[80px] bg-cyber-purple/5 border border-cyber-purple/10"></div>
               ))}
               {/* Days of the month */}
               {Array.from({ length: daysInMonth }, (_, i) => {
@@ -211,20 +227,25 @@ export const CalendarSync: React.FC = () => {
                 return (
                   <div
                     key={day}
-                    className={`cursor-pointer rounded-lg p-2 hover:bg-white/5 transition-colors ${today ? 'border border-cyber-purple' : ''}`}
+                    className={`cursor-pointer min-h-[80px] p-2 border transition-all ${today ? 'border-cyber-pink bg-cyber-pink/10 shadow-[inset_0_0_10px_rgba(236,72,153,0.3)]' : 'border-cyber-purple/20 bg-black/40 hover:bg-cyber-purple/20 hover:border-cyber-purple/60'}`}
                   >
                     <div className="flex w-full h-full flex-col">
-                      <div className={`flex items-center justify-between mb-1 ${today ? 'font-semibold text-cyber-purple' : ''}`}>
-                        <span className="text-xs">{day}</span>
-                        {/* Mini event dots */}
-                        <div className="flex space-x-1">
-                          {dayEvents.map((event) => (
-                            <div
-                              key={event.id}
-                              className={`h-2 w-2 rounded-full ${typeDotMap[event.type]} `}
-                            />
-                          ))}
-                        </div>
+                      <div className={`flex items-center justify-between mb-2`}>
+                        <span className={`text-sm ${today ? 'text-cyber-pink font-bold drop-shadow-[0_0_5px_rgba(236,72,153,0.8)]' : 'text-cyber-purple/80'}`}>{day}</span>
+                      </div>
+                      {/* Event indicators */}
+                      <div className="flex flex-col space-y-1 mt-auto">
+                        {dayEvents.slice(0,3).map((event) => (
+                          <div
+                            key={event.id}
+                            className={`text-[9px] truncate px-1 rounded-sm border-l-2 uppercase tracking-tight ${typeColorMap[event.type] || 'border-l-cyber-purple bg-cyber-purple/20 text-cyber-purple'}`}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
+                        {dayEvents.length > 3 && (
+                          <div className="text-[9px] text-cyber-purple/60 pl-1">+{dayEvents.length - 3} MORE</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -234,39 +255,44 @@ export const CalendarSync: React.FC = () => {
           </div>
 
           {/* Events List */}
-          <div className="glass-panel rounded-xl p-4">
-            <h3 className="font-semibold mb-4 flex items-center space-x-2">
-              Upcoming Events
-              <Clock className="h-4 w-4 text-cyber-blue" />
+          <div className="border border-cyber-purple/40 bg-black/80 shadow-[0_0_15px_rgba(168,85,247,0.15)] p-4 relative flex-1">
+            <h3 className="text-sm tracking-widest uppercase mb-4 flex items-center space-x-2 text-cyber-pink border-b border-cyber-purple/30 pb-2">
+              <Clock className="h-4 w-4" />
+              <span>Active Operations</span>
             </h3>
             {filteredEvents.length === 0 ? (
-              <p className="text-cyber-muted text-center py-8">No events found</p>
+              <p className="text-cyber-purple/50 text-center py-8 text-sm uppercase tracking-widest">No active protocols detected</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {filteredEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="glass-panel bg-white/5 border-white/5 rounded-xl p-4 space-y-3 cursor-pointer hover:bg-white/10 transition-colors"
+                    className="border border-cyber-purple/30 bg-black hover:border-cyber-pink/60 transition-all p-3 cursor-pointer relative overflow-hidden group"
                     onClick={() => setSelectedEventId(event.id)}
                   >
-                    <div className="flex justify-between items-start">
-                      <div className={`flex-1 ${typeColorMap[event.type]}`}>
-                        <h4 className="font-semibold">{event.title}</h4>
-                        <div className="flex items-baseline space-x-3 mt-1">
-                          <span className="text-xs font-mono text-cyber-muted">{event.time}</span>
-                          <span className="text-xs font-mono text-cyber-muted">{event.date.toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <span className={`px-2 py-0.5 rounded text-xs ${typeDotMap[event.type]}`}>
-                            {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
-                          </span>
-                          <span className="text-xs text-cyber-muted">{event.duration}</span>
-                          {event.location && (
-                            <span className="flex items-center text-xs space-x-1">
-                              <MapPin className="h-3 w-3" />
-                              <span>{event.location}</span>
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${typeDotMap[event.type] || 'bg-cyber-purple'}`}></div>
+                    <div className="pl-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-200 group-hover:text-cyber-pink transition-colors uppercase tracking-wider">{event.title}</h4>
+                          <div className="flex items-baseline space-x-4 mt-1">
+                            <span className="text-xs text-cyber-purple">T-{event.time.replace(':','')}</span>
+                            <span className="text-xs text-cyber-purple/70">{event.date.toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-3 mt-3">
+                            <span className={`px-2 py-0.5 text-[10px] uppercase tracking-widest border border-current ${typeColorMap[event.type]}`}>
+                              {event.type}
                             </span>
-                          )}
+                            <span className="text-[10px] text-cyber-purple/80 uppercase tracking-widest border border-cyber-purple/30 px-2 py-0.5">
+                              DUR: {event.duration}
+                            </span>
+                            {event.location && (
+                              <span className="flex items-center text-[10px] space-x-1 text-cyber-purple/80 uppercase tracking-widest border border-cyber-purple/30 px-2 py-0.5">
+                                <MapPin className="h-3 w-3" />
+                                <span>{event.location}</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -278,143 +304,79 @@ export const CalendarSync: React.FC = () => {
         </div>
 
         {/* Right: Quick Event Form, Selected Event Details, AI Suggestions */}
-        <div className="lg:col-span-4">
-          {/* Quick Event Form */}
-          <div className="glass-panel rounded-2xl p-5 border-cyber-border shadow-glass mb-6">
-            <h3 className="font-semibold mb-4 flex items-center space-x-2">
-              Schedule Event
-              <Plus className="h-4 w-4 text-cyber-blue" />
-            </h3>
-            {/* In a real app, we would have toggles for Daily/Weekly/Monthly, but we'll just show them as buttons */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">Daily</button>
-              <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">Weekly</button>
-              <button className="px-3 py-1 rounded text-sm bg-white/5 hover:bg-white/10">Monthly</button>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Event title"
-                value={eventForm.title}
-                onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                className="glass-input w-full"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  value={eventForm.date}
-                  onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
-                  className="glass-input"
-                />
-                <input
-                  type="time"
-                  value={eventForm.time}
-                  onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
-                  className="glass-input"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={eventForm.type}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'work' || val === 'personal' || val === 'health' || val === 'finance') {
-                      setEventForm({ ...eventForm, type: val as 'work' | 'personal' | 'health' | 'finance' });
-                    }
-                  }}
-                  className="glass-input"
-                >
-                  <option value="work">Work</option>
-                  <option value="personal">Personal</option>
-                  <option value="health">Health</option>
-                  <option value="finance">Finance</option>
-                </select>
-                <select
-                  value={eventForm.duration}
-                  onChange={(e) => setEventForm({ ...eventForm, duration: e.target.value })}
-                  className="glass-input"
-                >
-                  <option value="15m">15m</option>
-                  <option value="30m">30m</option>
-                  <option value="45m">45m</option>
-                  <option value="1h">1h</option>
-                  <option value="1.5h">1.5h</option>
-                  <option value="2h">2h</option>
-                </select>
-              </div>
-              <input
-                type="text"
-                placeholder="Location"
-                value={eventForm.location}
-                onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                className="glass-input"
-              />
-              <textarea
-                placeholder="Description"
-                value={eventForm.description}
-                onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-                className="glass-input"
-                rows={3}
-              />
-              <button
-                type="submit"
-                className="w-full bg-cyber-blue/20 hover:bg-cyber-blue/30 border-cyber-blue/40 text-white rounded-xl py-2"
-              >
-                Save Event
-              </button>
-            </form>
-          </div>
-
+        <div className="lg:col-span-4 flex flex-col space-y-6">
           {/* Selected Event Details */}
           {selectedEventId ? (
             (() => {
               const event = events.find(e => e.id === selectedEventId);
               if (!event) return null;
               return (
-                <div className="glass-panel rounded-2xl p-5 border-cyber-border shadow-glass mb-6">
-                  <h3 className="font-semibold mb-4 flex items-center space-x-2">
-                    Event Details
-                    <Check className="h-4 w-4 text-cyber-green" />
+                <div className="border border-cyber-pink/50 bg-black/90 shadow-[0_0_20px_rgba(236,72,153,0.15)] p-5 relative">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-cyber-pink/20 to-transparent pointer-events-none"></div>
+                  
+                  <h3 className="text-xs tracking-widest uppercase mb-4 flex items-center space-x-2 text-cyber-pink border-b border-cyber-pink/30 pb-2">
+                    <Check className="h-4 w-4" />
+                    <span>Protocol Details</span>
                   </h3>
+                  
                   <div className="space-y-4">
-                    <div className={`flex items-start ${typeColorMap[event.type]}`}>
-                      <h2 className="text-lg font-bold">{event.title}</h2>
+                    <div>
+                      <div className="text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">ID: {event.id}</div>
+                      <h2 className="text-lg font-bold text-white uppercase tracking-wider">{event.title}</h2>
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-cyber-muted">
-                      <Clock className="h-3 w-3" />
-                      <span>{event.time} · {event.date.toLocaleDateString()}</span>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="border border-cyber-purple/30 p-2 bg-black">
+                        <div className="text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Schedule</div>
+                        <div className="flex items-center space-x-2 text-sm text-cyber-purple">
+                          <Clock className="h-3 w-3" />
+                          <span>{event.time}</span>
+                        </div>
+                      </div>
+                      <div className="border border-cyber-purple/30 p-2 bg-black">
+                        <div className="text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Duration</div>
+                        <div className="text-sm text-cyber-purple">{event.duration}</div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-0.5 rounded text-xs bg-cyber-yellow/20`}>
-                        {event.duration}
-                      </span>
-                    </div>
+
                     {event.location && (
-                      <div className="flex items-center space-x-2 text-sm text-cyber-muted">
-                        <MapPin className="h-3 w-3" />
-                        <span>{event.location}</span>
+                      <div className="border border-cyber-purple/30 p-2 bg-black">
+                        <div className="text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Location Vector</div>
+                        <div className="flex items-center space-x-2 text-sm text-cyber-purple">
+                          <MapPin className="h-3 w-3" />
+                          <span>{event.location}</span>
+                        </div>
                       </div>
                     )}
+                    
                     {event.attendees && (
-                      <div className="flex items-center space-x-2 text-sm text-cyber-muted">
-                        <Users className="h-3 w-3" />
-                        <span>{event.attendees}</span>
+                      <div className="border border-cyber-purple/30 p-2 bg-black">
+                        <div className="text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Personnel</div>
+                        <div className="flex items-center space-x-2 text-sm text-cyber-purple">
+                          <Users className="h-3 w-3" />
+                          <span>{event.attendees}</span>
+                        </div>
                       </div>
                     )}
-                    <p className="text-cyber-muted text-xs">{event.description}</p>
-                    <div className="flex justify-between items-center mt-4">
+                    
+                    <div className="border border-cyber-purple/30 p-3 bg-black/50">
+                      <div className="text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-2">Description</div>
+                      <p className="text-cyber-purple/90 text-xs leading-relaxed">{event.description || 'NO ADDITIONAL DATA'}</p>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-cyber-purple/30">
                       <button
                         onClick={() => setSelectedEventId(null)}
-                        className="text-sm text-cyber-cyan hover:text-cyber-cyan/80"
+                        className="text-xs uppercase tracking-widest text-cyber-purple hover:text-white transition-colors border border-cyber-purple/40 px-4 py-2"
                       >
-                        <X className="h-4 w-4" />
-                        Close
+                        <X className="h-3 w-3 inline mr-2" />
+                        Dismiss
                       </button>
                       <button
                         onClick={() => handleDeleteEvent(event.id)}
-                        className="text-sm text-cyber-red hover:text-cyber-red/80"
+                        className="text-xs uppercase tracking-widest text-cyber-red hover:bg-cyber-red/20 transition-colors border border-cyber-red/40 px-4 py-2"
                       >
-                        Delete
+                        Terminate
                       </button>
                     </div>
                   </div>
@@ -422,34 +384,131 @@ export const CalendarSync: React.FC = () => {
               );
             })()
           ) : (
-            <div className="glass-panel rounded-2xl p-5 border-cyber-border shadow-glass mb-6 text-center text-cyber-muted">
-              Select an event from the calendar
+             <div className="border border-cyber-purple/30 bg-black/50 p-5 text-center text-cyber-purple/50 text-xs uppercase tracking-widest border-dashed">
+              Awaiting protocol selection...
             </div>
           )}
 
-          {/* AI Suggestions */}
-          <div className="glass-panel rounded-2xl p-5 border-cyber-border shadow-glass">
-            <h3 className="font-semibold mb-4 flex items-center space-x-2">
-              AI Calendar Intelligence
-              <Zap className="h-4 w-4 text-cyber-yellow" />
+          {/* Quick Event Form */}
+          <div className="border border-cyber-purple/40 bg-black/80 shadow-[0_0_15px_rgba(168,85,247,0.15)] p-5 relative">
+            <h3 className="text-xs tracking-widest uppercase mb-4 flex items-center space-x-2 text-cyber-purple border-b border-cyber-purple/30 pb-2">
+              <Plus className="h-4 w-4" />
+              <span>Initialize Protocol</span>
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-4 w-4 text-cyber-yellow/50 flex-shrink-0" />
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Designation</label>
+                <input
+                  type="text"
+                  placeholder="EVENT TITLE"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                  className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink focus:outline-none focus:border-cyber-pink px-3 py-2 text-sm uppercase tracking-wider"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-cyber-muted">Your schedule is light on May 22 — AI suggests adding a 2-hour focus deep-work block.</p>
+                  <label className="block text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Date Cycle</label>
+                  <input
+                    type="date"
+                    value={eventForm.date}
+                    onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                    className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink focus:outline-none focus:border-cyber-pink px-3 py-2 text-sm uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Time Vector</label>
+                  <input
+                    type="time"
+                    value={eventForm.time}
+                    onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
+                    className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink focus:outline-none focus:border-cyber-pink px-3 py-2 text-sm uppercase"
+                  />
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-4 w-4 text-cyber-yellow/50 flex-shrink-0" />
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-cyber-muted">Meeting at 9:00 AM overlaps with commute time from gym. Consider rescheduling to 10:00 AM.</p>
+                  <label className="block text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Classification</label>
+                  <select
+                    value={eventForm.type}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'work' || val === 'personal' || val === 'health' || val === 'finance') {
+                        setEventForm({ ...eventForm, type: val as 'work' | 'personal' | 'health' | 'finance' });
+                      }
+                    }}
+                    className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink focus:outline-none focus:border-cyber-pink px-3 py-2 text-sm uppercase"
+                  >
+                    <option value="work">Work</option>
+                    <option value="personal">Personal</option>
+                    <option value="health">Health</option>
+                    <option value="finance">Finance</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Duration</label>
+                  <select
+                    value={eventForm.duration}
+                    onChange={(e) => setEventForm({ ...eventForm, duration: e.target.value })}
+                    className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink focus:outline-none focus:border-cyber-pink px-3 py-2 text-sm uppercase"
+                  >
+                    <option value="15m">15m</option>
+                    <option value="30m">30m</option>
+                    <option value="45m">45m</option>
+                    <option value="1h">1h</option>
+                    <option value="1.5h">1.5h</option>
+                    <option value="2h">2h</option>
+                  </select>
                 </div>
               </div>
-              <div className="border-t border-white/5 pt-4">
-                <blockquote className="italic text-cyber-muted text-sm">
-                  "Your time is your most valuable asset. Protect it wisely."
-                </blockquote>
+              <div>
+                <label className="block text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Coordinates</label>
+                <input
+                  type="text"
+                  placeholder="LOCATION"
+                  value={eventForm.location}
+                  onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
+                  className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink focus:outline-none focus:border-cyber-pink px-3 py-2 text-sm uppercase tracking-wider"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-cyber-purple/70 uppercase tracking-widest mb-1">Parameters</label>
+                <textarea
+                  placeholder="DESCRIPTION"
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                  className="w-full bg-black/60 border border-cyber-purple/40 text-cyber-pink focus:outline-none focus:border-cyber-pink px-3 py-2 text-sm uppercase tracking-wider"
+                  rows={2}
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-cyber-purple/20 hover:bg-cyber-purple/40 border border-cyber-purple text-cyber-pink rounded-sm py-2 text-xs uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(168,85,247,0.2)] hover:shadow-[0_0_15px_rgba(236,72,153,0.4)]"
+              >
+                Execute Initialization
+              </button>
+            </form>
+          </div>
+
+          {/* AI Suggestions */}
+          <div className="border border-cyber-yellow/40 bg-black/80 shadow-[0_0_15px_rgba(234,179,8,0.1)] p-5 relative">
+            <h3 className="text-xs tracking-widest uppercase mb-4 flex items-center space-x-2 text-cyber-yellow border-b border-cyber-yellow/30 pb-2">
+              <Zap className="h-4 w-4" />
+              <span>System Insights</span>
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3 bg-cyber-yellow/5 border border-cyber-yellow/20 p-2">
+                <AlertCircle className="h-4 w-4 text-cyber-yellow flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-cyber-yellow/80 text-xs uppercase tracking-wider leading-relaxed">Schedule load suboptimal on May 22. Recommending injection of 2-hour deep-work focus node.</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3 bg-cyber-yellow/5 border border-cyber-yellow/20 p-2">
+                <AlertCircle className="h-4 w-4 text-cyber-yellow flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-cyber-yellow/80 text-xs uppercase tracking-wider leading-relaxed">Spatial conflict detected: 0900 meeting overlaps with transit from physical training facility. Adjustment required.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -457,14 +516,14 @@ export const CalendarSync: React.FC = () => {
       </div>
 
       {/* Bottom Banner */}
-      <div className="mt-6 glass-panel rounded-xl p-4 text-xs flex justify-between items-center">
+      <div className="relative z-10 mt-6 border-t border-cyber-purple/40 pt-4 text-[10px] uppercase tracking-widest flex justify-between items-center text-cyber-purple/70">
         <span className="flex items-center space-x-2">
-          <Zap className="h-3 w-3 text-cyber-yellow" />
-          <span>3 events today · AI optimized timing applied</span>
+          <span className="h-2 w-2 rounded-full bg-cyber-green animate-pulse"></span>
+          <span>{events.length} Nodes Active · System Optimized</span>
         </span>
         <span className="flex items-center space-x-2">
-          <Clock className="h-3 w-3 text-cyber-blue" />
-          <span>Timezone: PST (UTC-7)</span>
+          <Clock className="h-3 w-3" />
+          <span>Local Sync: {new Date().toLocaleTimeString()}</span>
         </span>
       </div>
     </div>

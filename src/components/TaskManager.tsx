@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   CheckSquare, Plus, Clock, Play, Pause, 
-  Trash2, BrainCircuit
+  Trash2, BrainCircuit, Terminal, Cpu, Network, Zap, Server, Activity, Target
 } from 'lucide-react';
 import type { Task } from '../types';
 
@@ -88,87 +88,93 @@ export const TaskManager: React.FC<TaskManagerProps> = ({
     return activeProject === 'all' || task.project === activeProject;
   });
 
-  const columns: { id: Task['status']; name: string; color: string; hoverColor: string }[] = [
-    { id: 'todo', name: 'To Do', color: 'border-t-cyber-blue text-cyber-blue bg-cyber-blue/5', hoverColor: 'hover:border-cyber-blue/40' },
-    { id: 'progress', name: 'In Progress', color: 'border-t-cyber-purple text-cyber-purple bg-cyber-purple/5', hoverColor: 'hover:border-cyber-purple/40' },
-    { id: 'done', name: 'Completed', color: 'border-t-cyber-green text-cyber-green bg-cyber-green/5', hoverColor: 'hover:border-cyber-green/40' }
+  const columns: { id: Task['status']; name: string; icon: React.ReactNode; borderColor: string; textColor: string; bgColor: string }[] = [
+    { id: 'todo', name: 'INIT_QUEUE', icon: <Server size={14} />, borderColor: 'border-cyber-cyan/30', textColor: 'text-cyber-cyan', bgColor: 'bg-black/60' },
+    { id: 'progress', name: 'PROCESSING', icon: <Activity size={14} className="animate-pulse" />, borderColor: 'border-cyber-purple/30', textColor: 'text-cyber-purple', bgColor: 'bg-black/60' },
+    { id: 'done', name: 'RESOLVED', icon: <Terminal size={14} />, borderColor: 'border-cyber-green/30', textColor: 'text-cyber-green', bgColor: 'bg-black/60' }
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="font-mono space-y-6 max-w-7xl mx-auto p-4 bg-black/60 border border-cyber-cyan/20 shadow-[0_0_15px_rgba(0,255,255,0.1)]">
       {/* Header and Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-cyber-cyan/30 pb-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <CheckSquare className="text-cyber-green" />
-            AI Task Manager
+          <h2 className="text-xl font-bold tracking-widest text-cyber-cyan flex items-center gap-3 uppercase">
+            <Cpu className="text-cyber-cyan" />
+            Neural Net Queue
           </h2>
-          <p className="text-cyber-muted text-xs">Kanban board, time tracking, and smart calendar prioritization.</p>
+          <p className="text-cyber-cyan/50 text-xs uppercase tracking-widest mt-1 flex items-center gap-2">
+            <Network size={12} /> System Task Allocation Node
+          </p>
         </div>
 
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-3 w-full sm:w-auto">
           <button 
             onClick={reorganizeSchedule}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 bg-cyber-purple/20 border border-cyber-purple/30 text-cyber-purple text-xs font-semibold rounded-xl hover:bg-cyber-purple/30 cursor-pointer transition-all"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-black/60 border border-cyber-purple/40 text-cyber-purple text-xs font-bold uppercase tracking-wider hover:bg-cyber-purple/10 hover:shadow-[0_0_10px_rgba(176,38,255,0.3)] transition-all cursor-pointer"
           >
-            <BrainCircuit size={14} /> AI Prioritization
+            <BrainCircuit size={14} /> Optimize
           </button>
           <button 
             onClick={() => setShowAddForm(true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 bg-cyber-green/20 border border-cyber-green/30 text-cyber-green text-xs font-semibold rounded-xl hover:bg-cyber-green/30 cursor-pointer transition-all"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-black/60 border border-cyber-cyan/40 text-cyber-cyan text-xs font-bold uppercase tracking-wider hover:bg-cyber-cyan/10 hover:shadow-[0_0_10px_rgba(0,255,255,0.3)] transition-all cursor-pointer"
           >
-            <Plus size={14} /> Add Task
+            <Plus size={14} /> Inject Node
           </button>
         </div>
       </div>
 
       {/* Project filtering list */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+      <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin border-b border-cyber-cyan/10">
+        <span className="text-cyber-cyan/40 text-xs uppercase tracking-widest flex items-center gap-1 shrink-0">
+          <Target size={12} /> Filters:
+        </span>
         {projects.map(proj => (
           <button
             key={proj}
             onClick={() => setActiveProject(proj)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer transition-all ${
+            className={`px-3 py-1 text-xs font-bold uppercase tracking-widest transition-all cursor-pointer shrink-0 ${
               activeProject === proj 
-                ? 'bg-white/15 border border-white/20 text-white' 
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-cyber-cyan/10 border border-cyber-cyan text-cyber-cyan shadow-[0_0_8px_rgba(0,255,255,0.2)]' 
+                : 'text-cyber-cyan/40 hover:text-cyber-cyan hover:bg-cyber-cyan/5 border border-cyber-cyan/20'
             }`}
           >
-            {proj}
+            [{proj}]
           </button>
         ))}
       </div>
 
       {/* Time Tracker Widget */}
       {trackingTaskId && (
-        <div className="glass-panel border-glow-purple rounded-xl p-4 flex justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyber-purple/10 text-cyber-purple animate-pulse">
-              <Clock size={16} />
+        <div className="bg-black/80 border border-cyber-purple/50 p-3 flex flex-col sm:flex-row justify-between items-center gap-4 relative overflow-hidden">
+          <div className="absolute inset-0 bg-cyber-purple/5 animate-pulse pointer-events-none" />
+          <div className="flex items-center gap-3 z-10">
+            <div className="text-cyber-purple animate-spin-slow">
+              <Activity size={18} />
             </div>
             <div>
-              <span className="text-[10px] text-cyber-purple font-mono uppercase tracking-wider">Active Time Tracker</span>
-              <p className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-md">
-                {tasks.find(t => t.id === trackingTaskId)?.title}
+              <span className="text-[10px] text-cyber-purple/70 font-mono uppercase tracking-widest">Active Thread Processing</span>
+              <p className="text-xs font-bold text-cyber-purple uppercase tracking-wider truncate max-w-[200px] sm:max-w-md">
+                {'>'} {tasks.find(t => t.id === trackingTaskId)?.title}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4 font-mono">
-            <span className="text-sm font-bold text-white tracking-widest bg-black/40 border border-white/5 rounded px-2.5 py-1">
+          <div className="flex items-center gap-4 z-10">
+            <span className="text-sm font-bold text-cyber-purple tracking-widest bg-black border border-cyber-purple/30 px-3 py-1 shadow-[0_0_8px_rgba(176,38,255,0.2)]">
               {formatTime(trackingTime)}
             </span>
             <div className="flex gap-2">
               <button 
                 onClick={() => setIsTrackingRunning(!isTrackingRunning)}
-                className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="p-1.5 bg-black border border-cyber-purple/30 text-cyber-purple hover:bg-cyber-purple/20 transition-all cursor-pointer"
               >
                 {isTrackingRunning ? <Pause size={14} /> : <Play size={14} />}
               </button>
               <button 
                 onClick={() => setTrackingTaskId(null)}
-                className="p-2 rounded-lg bg-cyber-red/10 border border-cyber-red/20 text-cyber-red hover:bg-cyber-red/20 cursor-pointer"
+                className="p-1.5 bg-black border border-cyber-red/30 text-cyber-red hover:bg-cyber-red/20 transition-all uppercase text-[10px] tracking-widest font-bold px-3 cursor-pointer"
               >
-                Stop
+                Term
               </button>
             </div>
           </div>
@@ -177,73 +183,77 @@ export const TaskManager: React.FC<TaskManagerProps> = ({
 
       {/* Add Task Form Dialog */}
       {showAddForm && (
-        <div className="glass-panel rounded-2xl p-6 border border-cyber-green/30 bg-cyber-bg/95 shadow-glass-lg space-y-4">
-          <h3 className="font-semibold text-lg text-white">Create Workspace Task</h3>
+        <div className="bg-black/90 border border-cyber-cyan shadow-[0_0_20px_rgba(0,255,255,0.15)] p-5 space-y-4 relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyber-cyan to-transparent opacity-50" />
+          <h3 className="font-bold text-sm tracking-widest text-cyber-cyan uppercase flex items-center gap-2">
+            <Terminal size={14} /> Construct New Node
+          </h3>
           <form onSubmit={handleAddSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] text-cyber-muted font-mono uppercase">Task Title</label>
+              <label className="text-[10px] text-cyber-cyan/60 uppercase tracking-widest">Node Designation</label>
               <input
                 type="text"
                 required
-                placeholder="What needs doing?"
+                placeholder="INPUT_TITLE..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs glass-input"
+                className="w-full px-3 py-2 text-xs bg-black/60 border border-cyber-cyan/30 text-cyber-cyan placeholder-cyber-cyan/30 focus:border-cyber-cyan focus:outline-none focus:shadow-[0_0_8px_rgba(0,255,255,0.2)] transition-all"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] text-cyber-muted font-mono uppercase">Project Namespace</label>
+              <label className="text-[10px] text-cyber-cyan/60 uppercase tracking-widest">Namespace</label>
               <input
                 type="text"
-                placeholder="e.g. Work, Personal, Life"
+                placeholder="SYS_ENV..."
                 value={project}
                 onChange={(e) => setProject(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs glass-input"
+                className="w-full px-3 py-2 text-xs bg-black/60 border border-cyber-cyan/30 text-cyber-cyan placeholder-cyber-cyan/30 focus:border-cyber-cyan focus:outline-none focus:shadow-[0_0_8px_rgba(0,255,255,0.2)] transition-all"
               />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <label className="text-[10px] text-cyber-muted font-mono uppercase">Detailed Description</label>
+              <label className="text-[10px] text-cyber-cyan/60 uppercase tracking-widest">Payload Data</label>
               <textarea
-                placeholder="Add contextual details here..."
+                placeholder="ENTER_PAYLOAD_DETAILS..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs glass-input min-h-[80px]"
+                className="w-full px-3 py-2 text-xs bg-black/60 border border-cyber-cyan/30 text-cyber-cyan placeholder-cyber-cyan/30 focus:border-cyber-cyan focus:outline-none focus:shadow-[0_0_8px_rgba(0,255,255,0.2)] transition-all min-h-[80px]"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] text-cyber-muted font-mono uppercase">Priority Level</label>
+              <label className="text-[10px] text-cyber-cyan/60 uppercase tracking-widest">Execution Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Task['priority'])}
-                className="w-full px-3 py-2 rounded-xl text-xs glass-input"
+                className="w-full px-3 py-2 text-xs bg-black/60 border border-cyber-cyan/30 text-cyber-cyan focus:border-cyber-cyan focus:outline-none focus:shadow-[0_0_8px_rgba(0,255,255,0.2)] transition-all appearance-none cursor-pointer"
               >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
+                <option value="low">PRIORITY_LOW</option>
+                <option value="medium">PRIORITY_MED</option>
+                <option value="high">PRIORITY_HIGH</option>
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] text-cyber-muted font-mono uppercase">Due Date</label>
+              <label className="text-[10px] text-cyber-cyan/60 uppercase tracking-widest">Cycle Deadline</label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs glass-input"
+                className="w-full px-3 py-2 text-xs bg-black/60 border border-cyber-cyan/30 text-cyber-cyan focus:border-cyber-cyan focus:outline-none focus:shadow-[0_0_8px_rgba(0,255,255,0.2)] transition-all cursor-pointer"
+                style={{ colorScheme: 'dark' }}
               />
             </div>
-            <div className="md:col-span-2 flex justify-end gap-2 pt-2">
+            <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t border-cyber-cyan/20">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 border border-white/10 rounded-xl text-xs font-semibold hover:bg-white/5 cursor-pointer text-slate-300 hover:text-white"
+                className="px-4 py-2 border border-cyber-cyan/30 text-cyber-cyan/70 text-xs font-bold tracking-widest uppercase hover:bg-cyber-cyan/10 hover:text-cyber-cyan transition-all cursor-pointer"
               >
-                Cancel
+                Abort
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-cyber-green/20 hover:bg-cyber-green/30 border border-cyber-green/40 hover:border-cyber-green/60 rounded-xl text-xs font-semibold text-white cursor-pointer"
+                className="px-4 py-2 bg-cyber-cyan/10 border border-cyber-cyan text-cyber-cyan text-xs font-bold tracking-widest uppercase hover:bg-cyber-cyan/20 hover:shadow-[0_0_12px_rgba(0,255,255,0.4)] transition-all flex items-center gap-2 cursor-pointer"
               >
-                Create Task
+                <Zap size={14} /> Execute
               </button>
             </div>
           </form>
@@ -257,84 +267,100 @@ export const TaskManager: React.FC<TaskManagerProps> = ({
           return (
             <div 
               key={col.id}
-              className={`glass-panel rounded-2xl border-t-4 border border-cyber-border ${col.color} p-4 flex flex-col min-h-[450px] shadow-glass`}
+              className={`flex flex-col min-h-[450px] bg-black/80 border ${col.borderColor} relative`}
             >
+              {/* Corner Accents */}
+              <div className={`absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 ${col.borderColor.replace('/30', '')}`} />
+              <div className={`absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 ${col.borderColor.replace('/30', '')}`} />
+              <div className={`absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 ${col.borderColor.replace('/30', '')}`} />
+              <div className={`absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 ${col.borderColor.replace('/30', '')}`} />
+
               {/* Column Header */}
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-semibold text-sm tracking-wide">{col.name}</span>
-                <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded font-mono font-bold">
-                  {colTasks.length}
+              <div className={`flex justify-between items-center p-3 border-b ${col.borderColor} ${col.bgColor}`}>
+                <span className={`font-bold text-xs tracking-widest uppercase flex items-center gap-2 ${col.textColor}`}>
+                  {col.icon} {col.name}
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 border ${col.borderColor} font-bold tracking-widest ${col.textColor}`}>
+                  {colTasks.length.toString().padStart(2, '0')}
                 </span>
               </div>
 
               {/* Task Items */}
-              <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-1">
+              <div className="space-y-3 p-3 flex-1 overflow-y-auto max-h-[500px] scrollbar-thin">
                 {colTasks.map(task => (
                   <div
                     key={task.id}
-                    className="glass-panel border-glow-purple bg-cyber-bg/40 rounded-xl p-3.5 hover:bg-black/40 border border-cyber-border transition-all flex flex-col justify-between gap-3 group"
+                    className={`bg-black border ${col.borderColor} p-3 hover:bg-black/40 transition-all flex flex-col justify-between gap-3 group relative overflow-hidden`}
                   >
+                    {/* Hover scanline effect */}
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-white/10 -translate-y-full group-hover:animate-[scanline_2s_linear_infinite]" />
+
                     <div>
-                      <div className="flex justify-between items-start gap-2">
-                        <h4 className="text-xs font-bold text-white leading-normal line-clamp-2">{task.title}</h4>
-                        <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
-                          task.priority === 'high' ? 'bg-cyber-red/20 text-cyber-red' :
-                          task.priority === 'medium' ? 'bg-cyber-yellow/20 text-cyber-yellow' : 'bg-cyber-blue/20 text-cyber-blue'
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <h4 className={`text-xs font-bold leading-normal uppercase tracking-wide flex items-start gap-2 ${col.textColor}`}>
+                          <span className="opacity-50 mt-0.5">{'>'}</span>
+                          {task.title}
+                        </h4>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 border shrink-0 ${
+                          task.priority === 'high' ? 'border-cyber-red/50 text-cyber-red bg-cyber-red/10' :
+                          task.priority === 'medium' ? 'border-cyber-yellow/50 text-cyber-yellow bg-cyber-yellow/10' : 'border-cyber-cyan/50 text-cyber-cyan bg-cyber-cyan/10'
                         }`}>
-                          {task.priority}
+                          {task.priority === 'high' ? 'P0' : task.priority === 'medium' ? 'P1' : 'P2'}
                         </span>
                       </div>
-                      <p className="text-[10px] text-cyber-muted mt-1.5 leading-relaxed line-clamp-3">
+                      <p className={`text-[10px] ${col.textColor} opacity-60 leading-relaxed font-light line-clamp-3 ml-3`}>
                         {task.description}
                       </p>
                     </div>
 
-                    <div className="flex justify-between items-center pt-2.5 border-t border-white/5 text-[9px] font-mono">
-                      <span className="text-cyber-muted">Due: {task.dueDate}</span>
-                      <div className="flex gap-1.5 items-center opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className={`flex justify-between items-center pt-3 mt-2 border-t ${col.borderColor} text-[9px] tracking-widest`}>
+                      <span className={`${col.textColor} opacity-50`}>DEADLINE: {task.dueDate}</span>
+                      <div className="flex gap-2 items-center opacity-40 group-hover:opacity-100 transition-opacity">
                         {/* Status switcher dropdown actions */}
                         {col.id !== 'todo' && (
                           <button
                             onClick={() => updateTaskStatus(task.id, 'todo')}
-                            className="px-1.5 py-0.5 rounded bg-white/5 hover:bg-cyber-blue/20 hover:text-cyber-blue cursor-pointer"
-                            title="Move to Todo"
+                            className="px-2 py-1 border border-cyber-cyan/30 text-cyber-cyan hover:bg-cyber-cyan/20 hover:shadow-[0_0_5px_rgba(0,255,255,0.4)] transition-all uppercase cursor-pointer"
+                            title="Move to INIT"
                           >
-                            Todo
+                            INIT
                           </button>
                         )}
                         {col.id !== 'progress' && (
                           <button
                             onClick={() => updateTaskStatus(task.id, 'progress')}
-                            className="px-1.5 py-0.5 rounded bg-white/5 hover:bg-cyber-purple/20 hover:text-cyber-purple cursor-pointer"
-                            title="Move to Progress"
+                            className="px-2 py-1 border border-cyber-purple/30 text-cyber-purple hover:bg-cyber-purple/20 hover:shadow-[0_0_5px_rgba(176,38,255,0.4)] transition-all uppercase cursor-pointer"
+                            title="Move to PROC"
                           >
-                            Active
+                            PROC
                           </button>
                         )}
                         {col.id !== 'done' && (
                           <button
                             onClick={() => updateTaskStatus(task.id, 'done')}
-                            className="px-1.5 py-0.5 rounded bg-white/5 hover:bg-cyber-green/20 hover:text-cyber-green cursor-pointer"
-                            title="Move to Done"
+                            className="px-2 py-1 border border-cyber-green/30 text-cyber-green hover:bg-cyber-green/20 hover:shadow-[0_0_5px_rgba(0,255,0,0.4)] transition-all uppercase cursor-pointer"
+                            title="Move to RSLV"
                           >
-                            Done
+                            RSLV
                           </button>
                         )}
+                        
                         {/* Time Tracker Play */}
                         <button
                           onClick={() => handleStartTracking(task.id)}
-                          className={`p-1 rounded cursor-pointer ${
+                          className={`p-1 border transition-all cursor-pointer ${
                             trackingTaskId === task.id && isTrackingRunning
-                              ? 'bg-cyber-purple/20 text-cyber-purple'
-                              : 'bg-white/5 text-slate-400 hover:text-white'
+                              ? 'border-cyber-purple text-cyber-purple bg-cyber-purple/20 shadow-[0_0_8px_rgba(176,38,255,0.4)]'
+                              : 'border-cyber-cyan/30 text-cyber-cyan/60 hover:text-cyber-cyan hover:bg-cyber-cyan/20'
                           }`}
                         >
                           <Play size={10} />
                         </button>
+                        
                         {/* Delete Task */}
                         <button
                           onClick={() => deleteTask(task.id)}
-                          className="p-1 rounded bg-white/5 text-slate-400 hover:text-cyber-red hover:bg-cyber-red/10 cursor-pointer"
+                          className="p-1 border border-cyber-red/30 text-cyber-red/60 hover:text-cyber-red hover:bg-cyber-red/20 transition-all cursor-pointer"
                         >
                           <Trash2 size={10} />
                         </button>
@@ -343,8 +369,8 @@ export const TaskManager: React.FC<TaskManagerProps> = ({
                   </div>
                 ))}
                 {colTasks.length === 0 && (
-                  <div className="border border-dashed border-white/5 rounded-xl py-12 text-center text-xs text-cyber-muted">
-                    No tasks in this board
+                  <div className={`border border-dashed ${col.borderColor} py-8 text-center text-[10px] tracking-widest uppercase ${col.textColor} opacity-30`}>
+                    NULL_SET
                   </div>
                 )}
               </div>
