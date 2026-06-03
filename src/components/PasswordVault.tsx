@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   ShieldCheck, Key, Eye, EyeOff, Copy, Plus, 
-  Search, RefreshCw, Lock, Unlock, CreditCard, FileText, Globe, Check
+  Search, RefreshCw, Lock, Unlock, CreditCard, FileText, Globe, Check, Trash2
 } from 'lucide-react';
 import type { PasswordEntry } from '../types';
 
@@ -9,9 +9,10 @@ import type { PasswordEntry } from '../types';
 interface PasswordVaultProps {
   entries: PasswordEntry[];
   addEntry: (entry: Omit<PasswordEntry, 'id' | 'lastModified'>) => void;
+  deleteEntry?: (id: string) => void;
 }
 
-export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry }) => {
+export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry, deleteEntry }) => {
   const [isUnlocked, setIsUnlocked] = React.useState(false);
   const [masterPassword, setMasterPassword] = React.useState('');
   const [unlockError, setUnlockError] = React.useState('');
@@ -60,7 +61,7 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry 
   };
 
   // Generate password helper
-  const handleGeneratePassword = () => {
+  const handleGeneratePassword = React.useCallback(() => {
     let chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     if (genIncludeNumbers) chars += '0123456789';
     if (genIncludeSymbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
@@ -70,11 +71,12 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry 
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setGeneratedPassword(result);
-  };
+  }, [genLength, genIncludeNumbers, genIncludeSymbols]);
 
   React.useEffect(() => {
-    handleGeneratePassword();
-  }, [genLength, genIncludeNumbers, genIncludeSymbols]);
+    const t = setTimeout(() => handleGeneratePassword(), 0);
+    return () => clearTimeout(t);
+  }, [handleGeneratePassword]);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -353,9 +355,22 @@ export const PasswordVault: React.FC<PasswordVaultProps> = ({ entries, addEntry 
                     {activeEntry.url}
                   </a>
                 </div>
-                <span className="text-[10px] text-cyber-pink bg-cyber-pink/15 border border-cyber-pink/20 rounded-full px-2 py-0.5 font-mono">
-                  AES-256 DEC
-                </span>
+                <div className="flex items-center gap-2">
+                  {deleteEntry && (
+                    <button
+                      onClick={() => {
+                        deleteEntry(activeEntry.id);
+                        setSelectedEntryId(null);
+                      }}
+                      className="px-2.5 py-1 bg-cyber-red/10 border border-cyber-red/35 text-cyber-red text-[10px] font-bold rounded-full hover:bg-cyber-red/20 transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  )}
+                  <span className="text-[10px] text-cyber-pink bg-cyber-pink/15 border border-cyber-pink/20 rounded-full px-2 py-0.5 font-mono">
+                    AES-256 DEC
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

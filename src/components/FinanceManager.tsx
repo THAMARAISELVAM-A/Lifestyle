@@ -27,13 +27,74 @@ export const FinanceManager: React.FC<FinanceManagerProps> = ({
   const [savingsTotal, setSavingsTotal] = React.useState(6800);
   const savingsTarget = 10000;
 
-  // Investment Portfolio Simulation
-  const portfolio = [
-    { symbol: 'NVDA', name: 'NVIDIA Corp', shares: 8, price: 924.50, change: 3.42 },
-    { symbol: 'BTC', name: 'Bitcoin', shares: 0.12, price: 68420.00, change: -1.25 },
-    { symbol: 'AAPL', name: 'Apple Inc', shares: 15, price: 189.20, change: 0.85 },
-    { symbol: 'SOL', name: 'Solana', shares: 14.5, price: 172.40, change: 8.92 }
-  ];
+  // Investment Portfolio State with real-time price fluctuation simulator
+  const [portfolio, setPortfolio] = React.useState([
+    { symbol: 'NVDA', name: 'NVIDIA Corp', shares: 8, price: 924.50, change: 3.42, lastDirection: 'up' as 'up' | 'down' | 'flat' },
+    { symbol: 'BTC', name: 'Bitcoin', shares: 0.12, price: 68420.00, change: -1.25, lastDirection: 'down' as 'up' | 'down' | 'flat' },
+    { symbol: 'AAPL', name: 'Apple Inc', shares: 15, price: 189.20, change: 0.85, lastDirection: 'up' as 'up' | 'down' | 'flat' },
+    { symbol: 'SOL', name: 'Solana', shares: 14.5, price: 172.40, change: 8.92, lastDirection: 'up' as 'up' | 'down' | 'flat' }
+  ]);
+
+  // Fetch real-time cryptocurrency rates from CoinGecko API
+  React.useEffect(() => {
+    const fetchCryptoPrices = async () => {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,solana&vs_currencies=usd&include_24hr_change=true');
+        if (!res.ok) throw new Error('API limits or offline');
+        const data = await res.json();
+        
+        setPortfolio(prev => prev.map(asset => {
+          if (asset.symbol === 'BTC' && data.bitcoin) {
+            const lastPrice = asset.price;
+            const newPrice = data.bitcoin.usd;
+            return {
+              ...asset,
+              price: newPrice,
+              change: Math.round(data.bitcoin.usd_24h_change * 100) / 100,
+              lastDirection: newPrice > lastPrice ? 'up' : newPrice < lastPrice ? 'down' : asset.lastDirection
+            };
+          }
+          if (asset.symbol === 'SOL' && data.solana) {
+            const lastPrice = asset.price;
+            const newPrice = data.solana.usd;
+            return {
+              ...asset,
+              price: newPrice,
+              change: Math.round(data.solana.usd_24h_change * 100) / 100,
+              lastDirection: newPrice > lastPrice ? 'up' : newPrice < lastPrice ? 'down' : asset.lastDirection
+            };
+          }
+          return asset;
+        }));
+      } catch (err) {
+        console.warn('CoinGecko fetch failed, falling back to simulated ticks:', err);
+      }
+    };
+
+    fetchCryptoPrices();
+    const interval = setInterval(fetchCryptoPrices, 30000); // Poll every 30s to keep it real-time and safe from API rate limits
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fluctuates stock assets (NVDA, AAPL) on a local simulation cycle
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setPortfolio(prev => prev.map(asset => {
+        if (asset.symbol === 'BTC' || asset.symbol === 'SOL') return asset;
+        const factor = Math.random() > 0.45 ? 1 : -1;
+        const percent = (Math.random() * 0.8 * factor) / 100;
+        const newPrice = Math.max(10, asset.price * (1 + percent));
+        const newChange = Math.round((asset.change + percent * 100) * 100) / 100;
+        return {
+          ...asset,
+          price: Math.round(newPrice * 100) / 100,
+          change: newChange,
+          lastDirection: factor > 0 ? 'up' : 'down'
+        };
+      }));
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
 
   // Recurring Subscriptions
@@ -222,10 +283,13 @@ export const FinanceManager: React.FC<FinanceManagerProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {portfolio.map((asset, idx) => {
+              {portfolio.map((asset) => {
                 const isPositive = asset.change > 0;
+                const pulseClass = asset.lastDirection === 'up'
+                  ? 'border-cyber-green/40 shadow-neon-green/5'
+                  : 'border-cyber-red/40 shadow-neon-red/5';
                 return (
-                  <div key={idx} className="bg-white/5 border border-white/5 rounded-xl p-3.5 space-y-2">
+                  <div key={asset.symbol} className={`bg-white/5 border rounded-xl p-3.5 space-y-2 transition-all duration-700 ${pulseClass}`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="font-mono text-sm font-bold text-white">{asset.symbol}</span>

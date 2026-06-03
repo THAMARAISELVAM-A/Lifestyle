@@ -55,7 +55,6 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
     async function loadNotes() {
       if (!isAuthenticated || !user?.id || notesLoaded) return;
       try {
-        // @ts-expect-error NeonDB.getAll for dynamic table name — DB service types don't include knowledge_notes yet
         const rows = await NeonDB.getAll<NoteRecord>('knowledge_notes', user.id);
         if (cancelled) return;
         if (rows.length > 0) {
@@ -84,7 +83,7 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
     const timer = setTimeout(() => {
       // Upsert: insert or update the note in Neon
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         NeonDB.insert('knowledge_notes', {
           user_id: user!.id,
           id: active.id,
@@ -93,7 +92,7 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
           category: 'general',
           tags: [],
           pinned: false,
-        } as any) // NeonDB insert does not fully include knowledge_notes in its TSL cleanup
+        } as unknown as Record<string, unknown>) // NeonDB insert does not fully include knowledge_notes in its TSL cleanup
         .catch(() => {});
       } catch { /* best-effort */ }
     }, 2000);
@@ -160,8 +159,10 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
         setSosCountdown(prev => (prev !== null ? prev - 1 : null));
       }, 1000);
     } else if (sosCountdown === 0) {
-      triggerToast('SOS Broadcast Transmitted to Emergency Contacts!');
-      setSosCountdown(null);
+      setTimeout(() => {
+        triggerToast('SOS Broadcast Transmitted to Emergency Contacts!');
+        setSosCountdown(null);
+      }, 0);
     }
     return () => clearInterval(timer);
   }, [sosCountdown]);
@@ -191,6 +192,30 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
   const currentPlan = fitnessPlans[goal];
 
   // --- DIGITAL IDENTITY STATE ---
+  const [permissions, setPermissions] = React.useState([
+    { id: 'ollama', name: 'Ollama Neural Engine', desc: 'Allows local LLM model to query your knowledge brain.', enabled: true, scope: 'Read-Brain' },
+    { id: 'googlefit', name: 'Google Fit Connector', desc: 'Syncs health biometrics & step logs.', enabled: true, scope: 'Write-Health' },
+    { id: 'smarthome', name: 'IoT Gateway Bridge', desc: 'Allows automation triggers to operate smart locks.', enabled: true, scope: 'Admin-IoT' }
+  ]);
+
+  const [accessLogs, setAccessLogs] = React.useState([
+    { time: '09:58:12 PM', source: 'Ollama LLM', event: 'Query Knowledge Notes', status: 'GRANTED' },
+    { time: '09:55:04 PM', source: 'IoT Bridge', event: 'Unlock Main Gate', status: 'GRANTED' },
+    { time: '09:50:30 PM', source: 'Google Fit', event: 'Write Step Biometrics', status: 'GRANTED' },
+    { time: '09:42:15 PM', source: 'OAuth Link', event: 'Verify JWT Session', status: 'GRANTED' }
+  ]);
+
+  const handleTogglePermission = (id: string) => {
+    setPermissions(prev => prev.map(p => {
+      if (p.id === id) {
+        const nextState = !p.enabled;
+        triggerToast(`${p.name} rules updated: ${nextState ? 'ENABLED' : 'REVOKED'}`);
+        return { ...p, enabled: nextState };
+      }
+      return p;
+    }));
+  };
+
   const [apiKeys, setApiKeys] = React.useState([
     { name: 'Ollama Local Integration', key: 'sk_ollama_••••••••••48c2', active: true },
     { name: 'Smart Home Hub Sync', key: 'sk_shhome_••••••••••92a1', active: true }
@@ -210,6 +235,44 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
     setApiKeys([...apiKeys, newKey]);
     triggerToast('New API Integration Token Created.');
   };
+
+  // Real-time access log simulator
+  React.useEffect(() => {
+    if (activeTab !== 'identity') return;
+    const interval = setInterval(() => {
+      const sources = [
+        { id: 'ollama', name: 'Ollama LLM' },
+        { id: 'smarthome', name: 'IoT Bridge' },
+        { id: 'googlefit', name: 'Google Fit' },
+        { id: 'oauth', name: 'OAuth Link' }
+      ];
+      const events = [
+        { sourceId: 'ollama', text: 'Query Knowledge Notes' },
+        { sourceId: 'smarthome', text: 'Unlock Main Gate' },
+        { sourceId: 'googlefit', text: 'Write Step Biometrics' },
+        { sourceId: 'oauth', text: 'Verify JWT Session' },
+        { sourceId: 'ollama', text: 'Decrypt Passwords' }
+      ];
+      
+      const eventPick = events[Math.floor(Math.random() * events.length)];
+      const sourcePick = sources.find(s => s.id === eventPick.sourceId) || sources[0];
+      
+      // Check permissions
+      const permObj = permissions.find(p => p.id === sourcePick.id);
+      const isAllowed = permObj ? permObj.enabled : true;
+      
+      // Decrypt Passwords is always DENIED for Ollama in this sandbox policy
+      const finalStatus = (sourcePick.id === 'ollama' && eventPick.text.includes('Passwords')) ? 'DENIED' : (isAllowed ? 'GRANTED' : 'REVOKED');
+      
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setAccessLogs(prev => [
+        { time: timeStr, source: sourcePick.name, event: eventPick.text, status: finalStatus },
+        ...prev.slice(0, 5) // keep last 6 entries
+      ]);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [activeTab, permissions]);
 
   // --- RENDER SELECTION HANDLER ---
   return (
@@ -805,69 +868,163 @@ export const OtherModules: React.FC<OtherModulesProps> = ({
 
       {/* 7. DIGITAL IDENTITY */}
       {activeTab === 'identity' && (
-        <div className="space-y-6 max-w-7xl mx-auto">
+        <div className="space-y-6 max-w-7xl mx-auto page-transition">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              <Fingerprint className="text-cyber-purple" />
-              Digital Identity Center
+              <Fingerprint className="text-cyber-purple text-glow-purple" />
+              Digital Identity & Access Manager
             </h2>
-            <p className="text-cyber-muted text-xs">Manage active sessions, security encryption keys, and developer APIs.</p>
+            <p className="text-cyber-muted text-xs">Configure third-party application scopes, API keys, and monitor live cryptographic audit ledgers.</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Active Sessions */}
-            <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass space-y-4">
-              <h3 className="font-semibold text-base text-slate-100 flex items-center gap-1.5">
-                <Fingerprint className="text-cyber-purple" size={18} />
-                Active Device Sessions
-              </h3>
+            {/* Left/Middle Column (Access Manager & APIs) */}
+            <div className="lg:col-span-2 space-y-6">
               
-              <div className="space-y-3">
-                {sessions.map((sess, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-xs p-3 rounded-xl bg-white/5 border border-white/5">
-                    <div>
-                      <p className="font-semibold text-slate-200">{sess.device}</p>
-                      <p className="text-[10px] text-cyber-muted mt-0.5">{sess.ip} • {sess.location}</p>
+              {/* Access Permissions Matrix */}
+              <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass space-y-4">
+                <div>
+                  <h3 className="font-semibold text-base text-slate-100 flex items-center gap-1.5">
+                    <Fingerprint className="text-cyber-purple" size={18} />
+                    Application Access Control Matrix
+                  </h3>
+                  <p className="text-cyber-muted text-[11px] mt-0.5">Revoke or grant reading/writing permissions to external agents in real-time.</p>
+                </div>
+                
+                <div className="space-y-4 pt-2">
+                  {permissions.map((perm) => (
+                    <div key={perm.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-cyber-purple/20 transition-all gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-xs text-white">{perm.name}</p>
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyber-purple/10 text-cyber-purple border border-cyber-purple/20">
+                            {perm.scope}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-cyber-muted mt-1 leading-relaxed">{perm.desc}</p>
+                      </div>
+                      
+                      {/* Interactive toggle switch */}
+                      <button
+                        onClick={() => handleTogglePermission(perm.id)}
+                        className={`w-9 h-5 rounded-full transition-all relative flex items-center cursor-pointer p-0.5 shrink-0 ${
+                          perm.enabled ? 'bg-cyber-purple shadow-neon-purple/35' : 'bg-slate-800 border border-white/10'
+                        }`}
+                      >
+                        <div
+                          className={`w-3.5 h-3.5 rounded-full transition-all bg-white transform ${
+                            perm.enabled ? 'translate-x-4' : 'translate-x-0 bg-slate-400'
+                          }`}
+                        />
+                      </button>
                     </div>
-                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded ${
-                      sess.active.includes('now') ? 'bg-cyber-green/20 text-cyber-green animate-pulse' : 'bg-white/10 text-slate-400'
-                    }`}>
-                      {sess.active.toUpperCase()}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+
+              {/* API Tokens */}
+              <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold text-base text-slate-100 flex items-center gap-1.5">
+                      <Key className="text-cyber-purple" size={18} />
+                      Developer API Tokens
+                    </h3>
+                    <p className="text-cyber-muted text-[11px] mt-0.5">Cryptographically signed credentials for external automation endpoints.</p>
+                  </div>
+                  <button 
+                    onClick={handleGenerateApiKey}
+                    className="px-3 py-1.5 bg-cyber-purple/20 border border-cyber-purple/30 text-cyber-purple text-[10px] font-bold rounded-xl hover:bg-cyber-purple/30 cursor-pointer transition-all"
+                  >
+                    Create Token
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {apiKeys.map((key, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs p-3 rounded-xl bg-white/5 border border-white/5 hover:border-cyber-purple/10 transition-all">
+                      <div>
+                        <p className="font-semibold text-slate-200">{key.name}</p>
+                        <p className="text-[10px] text-cyber-muted font-mono mt-0.5">{key.key}</p>
+                      </div>
+                      <span className="text-[9px] text-cyber-green font-mono font-bold uppercase tracking-wider bg-cyber-green/10 px-2 py-0.5 rounded border border-cyber-green/20">
+                        ACTIVE
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
-            {/* API Keys */}
-            <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-base text-slate-100 flex items-center gap-1.5">
-                  <Key className="text-cyber-purple" size={18} />
-                  Developer API Tokens
-                </h3>
-                <button 
-                  onClick={handleGenerateApiKey}
-                  className="px-2.5 py-1 bg-cyber-purple/20 border border-cyber-purple/30 text-cyber-purple text-[10px] font-bold rounded-lg hover:bg-cyber-purple/30 cursor-pointer"
-                >
-                  Create Token
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {apiKeys.map((key, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-xs p-3 rounded-xl bg-white/5 border border-white/5">
-                    <div>
-                      <p className="font-semibold text-slate-200">{key.name}</p>
-                      <p className="text-[10px] text-cyber-muted font-mono mt-0.5">{key.key}</p>
-                    </div>
-                    <span className="text-[9px] text-cyber-green font-mono font-bold uppercase">
-                      ACTIVE
+            {/* Right Column (Live Logs & Active Sessions) */}
+            <div className="space-y-6">
+              
+              {/* Real-time Security Access Log */}
+              <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between h-[300px]">
+                <div className="border-b border-white/5 pb-2.5">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-sm text-slate-100 flex items-center gap-1.5">
+                      <Zap className="text-cyber-yellow animate-pulse" size={16} />
+                      Real-time Cryptographic Logs
+                    </h3>
+                    <span className="text-[8px] bg-cyber-green/15 text-cyber-green border border-cyber-green/20 px-2 py-0.5 rounded font-mono font-bold uppercase tracking-widest animate-pulse">
+                      LIVE STREAM
                     </span>
                   </div>
-                ))}
+                  <p className="text-cyber-muted text-[10px] mt-0.5">Continuous audit trail of local & external auth calls.</p>
+                </div>
+
+                {/* Logs lists */}
+                <div className="flex-1 overflow-y-auto my-3 space-y-2 pr-1 custom-scrollbar">
+                  {accessLogs.map((log, idx) => {
+                    const isGranted = log.status === 'GRANTED';
+                    const isDenied = log.status === 'DENIED';
+                    return (
+                      <div key={idx} className="p-2 rounded bg-black/40 border border-white/5 flex flex-col gap-1 font-mono text-[10px]">
+                        <div className="flex justify-between items-center">
+                          <span className="text-cyber-purple font-bold">{log.time}</span>
+                          <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded border ${
+                            isGranted ? 'bg-cyber-green/10 text-cyber-green border-cyber-green/20' :
+                            isDenied ? 'bg-cyber-red/20 text-cyber-red border-cyber-red/30' : 'bg-cyber-yellow/20 text-cyber-yellow border-cyber-yellow/30'
+                          }`}>
+                            {log.status}
+                          </span>
+                        </div>
+                        <div className="text-slate-300">
+                          <span className="text-cyber-blue font-bold mr-1">[{log.source}]</span> {log.event}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Active Sessions */}
+              <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass space-y-4">
+                <h3 className="font-semibold text-sm text-slate-100 flex items-center gap-1.5">
+                  <Fingerprint className="text-cyber-purple" size={16} />
+                  Active Device Sessions
+                </h3>
+                
+                <div className="space-y-3">
+                  {sessions.map((sess, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs p-3 rounded-xl bg-white/5 border border-white/5 hover:border-cyber-purple/10 transition-all">
+                      <div>
+                        <p className="font-semibold text-slate-200">{sess.device}</p>
+                        <p className="text-[10px] text-cyber-muted mt-0.5">{sess.ip} • {sess.location}</p>
+                      </div>
+                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded ${
+                        sess.active.includes('now') ? 'bg-cyber-green/10 text-cyber-green border border-cyber-green/20 animate-pulse' : 'bg-white/10 text-slate-400'
+                      }`}>
+                        {sess.active.toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
           </div>

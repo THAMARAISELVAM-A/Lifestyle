@@ -25,6 +25,33 @@ export const SmartHome: React.FC<SmartHomeProps> = ({
 
   const [automationActive, setAutomationActive] = React.useState(true);
 
+  // Dynamic fluctuating power draw based on active status of IoT switches
+  const [powerLoad, setPowerLoad] = React.useState(140);
+  
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      let baseLoad = 45; // baseline standby load
+      devices.forEach(d => {
+        if (d.status) {
+          if (d.type === 'ac') {
+            const tempVal = d.value ? parseInt(String(d.value)) : 22;
+            baseLoad += (32 - tempVal) * 115; // lower temp = higher AC power draw
+          } else if (d.type === 'light') {
+            baseLoad += 45;
+          } else if (d.type === 'lock') {
+            baseLoad += 10;
+          } else {
+            baseLoad += 85;
+          }
+        }
+      });
+      // Fluctuate slightly
+      const fluctuation = Math.floor(Math.random() * 12) - 6;
+      setPowerLoad(Math.max(25, baseLoad + fluctuation));
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [devices]);
+
   const handleToggle = (id: string, name: string, status: boolean) => {
     toggleDevice(id);
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -72,9 +99,9 @@ export const SmartHome: React.FC<SmartHomeProps> = ({
               return (
                 <div 
                   key={dev.id}
-                  className={`glass-panel rounded-2xl p-5 border transition-all flex flex-col justify-between h-[150px] shadow-glass ${
+                  className={`glass-panel glass-panel-glow rounded-2xl p-5 border transition-all flex flex-col justify-between h-[150px] shadow-glass ${
                     dev.status 
-                      ? 'border-cyber-orange/30 bg-cyber-orange/5 shadow-neon-blue/5' 
+                      ? 'border-cyber-orange/40 bg-cyber-orange/5 shadow-neon-pink/5' 
                       : 'border-cyber-border'
                   }`}
                 >
@@ -192,6 +219,34 @@ export const SmartHome: React.FC<SmartHomeProps> = ({
               
               <div className="absolute bottom-2 left-2 text-[9px] font-mono text-cyber-orange bg-black/60 px-1.5 py-0.5 rounded">
                 CAM_1_DRIVEWAY_ONLINE
+              </div>
+            </div>
+          </div>
+
+          {/* Real-time IoT Energy Grid Monitor */}
+          <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-sm text-slate-100 flex items-center gap-1.5">
+                <Power className="text-cyber-orange animate-pulse" size={16} />
+                Real-Time IoT Power Draw
+              </h3>
+              <span className="text-[10px] text-cyber-orange font-mono font-bold">GRID LINKED</span>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-baseline font-mono">
+                <span className="text-4xl font-extrabold text-white tracking-tight">{powerLoad}</span>
+                <span className="text-xs text-cyber-muted font-bold">WATTS</span>
+              </div>
+              <p className="text-[10px] text-cyber-muted leading-relaxed">
+                Fluctuating system load matching {devices.filter(d => d.status).length} active appliances.
+              </p>
+              
+              <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/5 mt-2">
+                <div 
+                  className="bg-cyber-orange h-full shadow-neon-pink transition-all duration-1000 ease-out" 
+                  style={{ width: `${Math.min(100, (powerLoad / 3000) * 100)}%` }}
+                ></div>
               </div>
             </div>
           </div>

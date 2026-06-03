@@ -1,8 +1,9 @@
 // MyLife OS: Neon Database Service (serverless driver)
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { neon } from '@neondatabase/serverless';
 import { AuthService } from './auth';
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_u0j9QXxmkoaM@ep-royal-brook-aokk7v7o-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = 'postgresql://neondb_owner:npg_u0j9QXxmkoaM@ep-royal-brook-aokk7v7o-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 
 const sql = neon(DATABASE_URL);
 
@@ -22,34 +23,67 @@ export type TableName =
   | 'knowledge_notes'
   | 'user_profiles';
 
-// Helper: run raw parameterized SQL via neon http query
-// The neon() function at runtime supports sql(queryString, params) but TypeScript
-// only exposes the tagged template overload, so we cast to bypass it.
 const sqlQuery = sql as any;
 
 async function rawQuery(queryText: string, params: unknown[] = []): Promise<any[]> {
   return sqlQuery(queryText, params) as Promise<any[]>;
 }
 
-// ========================================
-// Generic CRUD operations
-// ========================================
-
 export class NeonDB {
+  // Translates application-space keys (camelCase) to database-space keys (snake_case)
+  private static toDbRow(table: TableName, data: any): any {
+    if (!data || typeof data !== 'object') return data;
+    const dbData = { ...data };
+    
+    // Camel to snake conversion helper
+    const camelToSnake = (s: string) => s.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    
+    const result: any = {};
+    for (const key of Object.keys(dbData)) {
+      let dbKey = camelToSnake(key);
+      // Special custom mappings
+      if (table === 'automations' && key === 'trigger') {
+        dbKey = 'trigger_condition';
+      }
+      result[dbKey] = dbData[key];
+    }
+    return result;
+  }
+
+  // Translates database-space keys to application-space keys
+  private static toAppRow(table: TableName, dbRow: any): any {
+    if (!dbRow || typeof dbRow !== 'object') return dbRow;
+    
+    // Snake to camel conversion helper
+    const snakeToCamel = (s: string) => s.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    
+    const result: any = {};
+    for (const key of Object.keys(dbRow)) {
+      let appKey = snakeToCamel(key);
+      // Special custom mappings
+      if (table === 'automations' && key === 'trigger_condition') {
+        appKey = 'trigger';
+      }
+      result[appKey] = dbRow[key];
+    }
+    return result;
+  }
+
   /**
    * Get all rows for the current user from a table
    */
   static async getAll<T>(table: TableName, userId?: string): Promise<T[]> {
     const uid = userId ?? this._authenticatedUserId();
-    if (!uid) return this.getLocalCache<T>(table);
+    if (!uid || uid === 'guest') return this.getLocalCache<T>(table);
 
     try {
       const rows = await rawQuery(
         `SELECT * FROM ${table} WHERE user_id = $1 ORDER BY created_at DESC`,
         [uid]
       );
-      this.setLocalCache(table, rows);
-      return rows as T[];
+      const appRows = rows.map(r => this.toAppRow(table, r));
+      this.setLocalCache(table, appRows);
+      return appRows as T[];
     } catch (e) {
       console.warn(`NeonDB.getAll(${table}) failed, using local cache:`, e);
       return this.getLocalCache<T>(table);
@@ -65,20 +99,13 @@ export class NeonDB {
         `SELECT * FROM ${table} WHERE id = $1 LIMIT 1`,
         [id]
       );
-      return (rows[0] as T) || null;
+      return rows[0] ? (this.toAppRow(table, rows[0]) as T) : null;
     } catch (e) {
       console.warn(`NeonDB.getById(${table}, ${id}) failed:`, e);
       return null;
     }
   }
 
-  // ── Private helper ───────────────────────────────────────────────────────────
-
-  /**
-   * Safely resolves the current authenticated user id with undefined fallback.
-   * Returns `undefined` during race-conditions where the Session token is
-   * not yet enrolled in the auth store, instead of resolving to `null`.
-   */
   private static _authenticatedUserId(): string | undefined {
     try {
       const u = AuthService.getUser();
@@ -89,35 +116,42 @@ export class NeonDB {
   }
 
   /**
-   * Insert a new row. Caller should include user_id in the data object
-   * when operating in authenticated mode; a guest fallback is used otherwise.
+   * Insert a new row.
    */
   static async insert<T extends Record<string, any>>(table: TableName, data: T): Promise<T> {
-    const uid = (data as any).user_id ?? this._authenticatedUserId();
-    const row: Record<string, any> = { ...data, user_id: uid || 'guest' };
+    const uid = (data as any).userId ?? (data as any).user_id ?? this._authenticatedUserId();
+    const dbRow = this.toDbRow(table, data);
+    dbRow.user_id = uid || 'guest';
 
     // Optimistic local cache update
+    const appRow = this.toAppRow(table, dbRow);
     const cache = this.getLocalCache<T>(table);
-    cache.push(row as T);
+    cache.push(appRow as T);
     this.setLocalCache(table, cache);
 
+    if (!uid || uid === 'guest') {
+      return appRow as T;
+    }
+
     try {
-      const cols = Object.keys(row).map(c => `"${c}"`);      // always quote column names
+      const cols = Object.keys(dbRow).map(c => `"${c}"`);
       const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-      const vals = Object.values(row);
+      const vals = Object.values(dbRow);
 
       const result = await rawQuery(
         `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders}) RETURNING *`,
         vals
       );
-      const inserted = (result[0] || row) as T;
-      // Update cache with server response
-      const updated = cache.map(c => (c as any).id === (inserted as any).id ? inserted : c);
+      const insertedDb = result[0] || dbRow;
+      const insertedApp = this.toAppRow(table, insertedDb);
+      
+      const updated = cache.map(c => (c as any).id === (insertedApp as any).id ? insertedApp : c);
       this.setLocalCache(table, updated);
-      return inserted;
+      return insertedApp;
     } catch (e) {
       console.warn(`NeonDB.insert(${table}) failed, local only:`, e);
-      return row as T;
+      this.addToSyncQueue({ action: 'insert', table, id: appRow.id || `p_${Date.now()}`, data: appRow });
+      return appRow as T;
     }
   }
 
@@ -136,8 +170,12 @@ export class NeonDB {
     );
     this.setLocalCache(table, updatedCache);
 
+    const uid = this._authenticatedUserId();
+    if (!uid || uid === 'guest') return;
+
     try {
-      const entries = Object.entries(updates);
+      const dbUpdates = this.toDbRow(table, updates);
+      const entries = Object.entries(dbUpdates);
       if (entries.length === 0) return;
 
       const setClause = entries.map(([key], i) => `"${key}" = $${i + 1}`).join(', ');
@@ -149,6 +187,7 @@ export class NeonDB {
       );
     } catch (e) {
       console.warn(`NeonDB.update(${table}, ${id}) failed:`, e);
+      this.addToSyncQueue({ action: 'update', table, id, data: updates });
     }
   }
 
@@ -159,10 +198,14 @@ export class NeonDB {
     const cache = this.getLocalCache<any>(table);
     this.setLocalCache(table, cache.filter(item => item.id !== id));
 
+    const uid = this._authenticatedUserId();
+    if (!uid || uid === 'guest') return;
+
     try {
       await rawQuery(`DELETE FROM ${table} WHERE id = $1`, [id]);
     } catch (e) {
       console.warn(`NeonDB.remove(${table}, ${id}) failed:`, e);
+      this.addToSyncQueue({ action: 'remove', table, id });
     }
   }
 
@@ -171,6 +214,9 @@ export class NeonDB {
   // ========================================
 
   static async getOrCreateProfile(authUserId: string, name: string, email: string): Promise<any> {
+    if (authUserId === 'guest') {
+      return { id: 'guest', display_name: name, email, life_score: 75, xp_total: 0 };
+    }
     try {
       const existing = await rawQuery(
         `SELECT * FROM user_profiles WHERE auth_user_id = $1 LIMIT 1`,
@@ -192,8 +238,10 @@ export class NeonDB {
   }
 
   static async updateProfile(authUserId: string, updates: Record<string, any>): Promise<void> {
+    if (authUserId === 'guest') return;
     try {
-      const entries = Object.entries(updates);
+      const dbUpdates = this.toDbRow('user_profiles', updates);
+      const entries = Object.entries(dbUpdates);
       if (entries.length === 0) return;
 
       const setClause = entries.map(([key], i) => `"${key}" = $${i + 1}`).join(', ');
@@ -205,6 +253,82 @@ export class NeonDB {
       );
     } catch (e) {
       console.warn('NeonDB.updateProfile failed:', e);
+    }
+  }
+
+  // ========================================
+  // Sync Queue Logic (Offline Fallback & Healing)
+  // ========================================
+
+  private static addToSyncQueue(item: { action: 'insert' | 'update' | 'remove'; table: TableName; id: string; data?: any }): void {
+    try {
+      const queueRaw = localStorage.getItem('mylife_sync_queue');
+      const queue = queueRaw ? JSON.parse(queueRaw) : [];
+      const filtered = queue.filter((q: any) => !(q.id === item.id && q.action === item.action));
+      filtered.push(item);
+      localStorage.setItem('mylife_sync_queue', JSON.stringify(filtered));
+    } catch (e) {
+      console.warn('Failed to add to sync queue:', e);
+    }
+  }
+
+  static async processSyncQueue(): Promise<void> {
+    const uid = this._authenticatedUserId();
+    if (!uid || uid === 'guest') return;
+
+    try {
+      const queueRaw = localStorage.getItem('mylife_sync_queue');
+      if (!queueRaw) return;
+      const queue = JSON.parse(queueRaw);
+      if (queue.length === 0) return;
+
+      console.log(`[Autonomous Sync] Processing ${queue.length} pending offline transactions...`);
+      const failedItems: any[] = [];
+
+      for (const item of queue) {
+        try {
+          if (item.action === 'insert') {
+            const dbRow = this.toDbRow(item.table, item.data);
+            const cols = Object.keys(dbRow).map(c => `"${c}"`);
+            const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+            const vals = Object.values(dbRow);
+            
+            // Upsert insert operations
+            await rawQuery(
+              `INSERT INTO ${item.table} (${cols.join(', ')}) 
+               VALUES (${placeholders}) 
+               ON CONFLICT (id) DO UPDATE SET 
+               ${Object.keys(dbRow).map(c => `"${c}" = EXCLUDED."${c}"`).join(', ')}`,
+              vals
+            );
+          } else if (item.action === 'update') {
+            const dbUpdates = this.toDbRow(item.table, item.data);
+            const entries = Object.entries(dbUpdates);
+            if (entries.length > 0) {
+              const setClause = entries.map(([key], i) => `"${key}" = $${i + 1}`).join(', ');
+              const values = [...entries.map(([, val]) => val), item.id];
+              await rawQuery(
+                `UPDATE ${item.table} SET ${setClause} WHERE id = $${entries.length + 1}`,
+                values
+              );
+            }
+          } else if (item.action === 'remove') {
+            await rawQuery(`DELETE FROM ${item.table} WHERE id = $1`, [item.id]);
+          }
+        } catch (e) {
+          console.warn(`[Autonomous Sync] Retry item failed:`, item, e);
+          failedItems.push(item);
+        }
+      }
+
+      if (failedItems.length > 0) {
+        localStorage.setItem('mylife_sync_queue', JSON.stringify(failedItems));
+      } else {
+        localStorage.removeItem('mylife_sync_queue');
+        console.log('[Autonomous Sync] All offline items synchronized successfully.');
+      }
+    } catch (e) {
+      console.warn('[Autonomous Sync] Sync queue processing error:', e);
     }
   }
 

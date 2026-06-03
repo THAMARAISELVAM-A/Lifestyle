@@ -42,16 +42,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess, onClose, canCan
           setError(res.error || 'Authentication failed. Check credentials.');
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during verification.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred during verification.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGuestMode = () => {
-    // Guest mode uses local cache fallback directly
+    AuthService.setGuest();
     onSuccess();
+  };
+
+  const handleSandboxLogin = async () => {
+    setLoading(true);
+    setError(null);
+    const demoEmail = 'admin@gmail.com';
+    const demoPassword = 'admin@123';
+    const demoName = 'System Admin';
+
+    try {
+      // First try to sign in
+      const res = await AuthService.signIn(demoEmail, demoPassword);
+      if (res.success) {
+        onSuccess();
+        return;
+      }
+      
+      // If it fails, attempt to register the demo profile
+      const signupRes = await AuthService.signUp(demoEmail, demoPassword, demoName);
+      if (signupRes.success) {
+        onSuccess();
+      } else {
+        setError(signupRes.error || 'Failed to auto-provision sandbox account.');
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred during sandbox provision.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -99,6 +128,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess, onClose, canCan
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={loading}
+                  autoComplete="name"
                   className="w-full pl-10 pr-4 py-2.5 bg-black/30 border border-cyber-border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyber-purple focus:ring-1 focus:ring-cyber-purple/30 transition-all font-sans"
                 />
               </div>
@@ -117,6 +147,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess, onClose, canCan
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
+                autoComplete="email"
                 className="w-full pl-10 pr-4 py-2.5 bg-black/30 border border-cyber-border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyber-purple focus:ring-1 focus:ring-cyber-purple/30 transition-all font-sans"
               />
             </div>
@@ -134,6 +165,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess, onClose, canCan
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
                 className="w-full pl-10 pr-4 py-2.5 bg-black/30 border border-cyber-border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyber-purple focus:ring-1 focus:ring-cyber-purple/30 transition-all font-sans"
               />
             </div>
@@ -156,9 +188,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess, onClose, canCan
               </>
             )}
           </button>
+
+          <button
+            type="button"
+            onClick={handleSandboxLogin}
+            disabled={loading}
+            className="w-full mt-3 py-2.5 px-4 rounded-xl bg-cyber-purple/10 hover:bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/20 hover:border-cyber-purple/40 font-bold text-xs tracking-wider uppercase font-mono transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <ShieldCheck size={14} className="text-cyber-purple animate-pulse" />
+            <span>Auto-Provision Demo Profile</span>
+          </button>
+          <p className="text-[9px] text-center text-slate-500 font-mono mt-1.5 leading-normal">
+            Logs in or registers a test cloud profile (<code className="text-cyber-purple">admin@gmail.com</code>) in your Neon Database automatically.
+          </p>
         </form>
 
-        <div className="mt-6 flex flex-col gap-3 items-center">
+        <div className="mt-4 flex flex-col gap-3 items-center">
           <button
             type="button"
             disabled={loading}

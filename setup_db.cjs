@@ -1,6 +1,6 @@
 const { neon } = require('@neondatabase/serverless');
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_u0j9QXxmkoaM@ep-royal-brook-aokk7v7o-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = 'postgresql://neondb_owner:npg_u0j9QXxmkoaM@ep-royal-brook-aokk7v7o-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 
 async function setupDatabase() {
   const sql = neon(DATABASE_URL);
@@ -11,6 +11,13 @@ async function setupDatabase() {
     // Test connection
     const test = await sql`SELECT version()`;
     console.log('Connected! PostgreSQL version:', test[0].version.substring(0, 60), '...\n');
+
+    console.log('Cleaning up existing tables (fresh setup)...');
+    await sql`DROP TABLE IF EXISTS 
+      user_profiles, tasks, passwords, health_metrics, expenses, devices, 
+      messages, files, automations, goals, notifications, calendar_events, 
+      ai_chat_history, knowledge_notes CASCADE`;
+    console.log('  ✓ Stale tables cleared.\n');
 
     // Create tables one at a time for reliability
     console.log('Creating user_profiles...');

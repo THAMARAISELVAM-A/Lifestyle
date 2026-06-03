@@ -91,3 +91,30 @@ export interface Goal {
   streak: number;
   xpValue: number;
 }
+
+export interface WorldEvent {
+  id: string;
+  title: string;
+  type: 'earthquake' | 'news' | 'market' | 'space';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: string;
+  source: string;
+  url?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface WeatherData {
+  city: string;
+  temp: number;
+  condition: string;
+  lat: number;
+  lon: number;
+}
+
+export interface TomEvolutionLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  impactScore: number;
+  details: string;
+}

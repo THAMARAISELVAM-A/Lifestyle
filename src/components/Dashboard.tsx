@@ -4,6 +4,8 @@ import {
   DollarSign, Home as HomeIcon, Zap, Clock, ShieldAlert, Award, ChevronRight
 } from 'lucide-react';
 import type { Task, Goal, HealthMetric, SmartDevice } from '../types';
+import { AnimatedCounter } from './AnimatedCounter';
+import { Sparkline } from './Sparkline';
 
 
 
@@ -152,7 +154,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </svg>
             <div className="absolute text-center">
               <span className={`text-4xl font-extrabold tracking-tight ${getLifeScoreColor(lifeScore)}`}>
-                {lifeScore}
+                <AnimatedCounter value={lifeScore} />
               </span>
               <span className="block text-[10px] text-cyber-muted uppercase tracking-wider font-mono">Index Level</span>
             </div>
@@ -214,7 +216,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Health Tracker Widget */}
         <div 
           onClick={() => setActiveTab('health')}
-          className="glass-panel glass-panel-hover rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
+          className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex justify-between items-start">
@@ -266,16 +268,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <span className="text-[10px] text-cyber-muted flex items-center gap-1 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyber-pink animate-pulse"></span>
-            Syncing via Google Fit
-          </span>
+          <div className="flex justify-between items-center mt-3">
+            <span className="text-[10px] text-cyber-muted flex items-center gap-1 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyber-pink animate-pulse"></span>
+              Syncing via Google Fit
+            </span>
+            <Sparkline data={[72, 75, 68, 80, 74, 71, 72]} color="var(--cyber-pink)" width={80} height={20} />
+          </div>
         </div>
 
         {/* Task & Productivity Widget */}
         <div 
           onClick={() => setActiveTab('tasks')}
-          className="glass-panel glass-panel-hover rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
+          className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex justify-between items-start">
@@ -331,7 +336,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Schedule & Calendar Widget */}
         <div 
           onClick={() => setActiveTab('calendar')}
-          className="glass-panel glass-panel-hover rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
+          className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex justify-between items-start">
@@ -377,7 +382,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Finance Quick Widget */}
         <div 
           onClick={() => setActiveTab('finance')}
-          className="glass-panel glass-panel-hover rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
+          className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex justify-between items-start">
@@ -410,16 +415,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <span className="text-[10px] text-cyber-muted flex items-center gap-1 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyber-green"></span>
-            AI: Savings rate is optimized at 28%
-          </span>
+          <div className="flex justify-between items-center mt-3">
+            <span className="text-[10px] text-cyber-muted flex items-center gap-1 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyber-green"></span>
+              AI: Savings rate is optimized at 28%
+            </span>
+            <Sparkline data={[320, 180, 250, 420, 150, 280, 385]} color="var(--cyber-green)" width={80} height={20} />
+          </div>
         </div>
 
         {/* Smart Home Quick Control */}
         <div 
           onClick={() => setActiveTab('smarthome')}
-          className="glass-panel glass-panel-hover rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
+          className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex justify-between items-start">
@@ -469,7 +477,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Habit Tracker & XP Widget */}
         <div 
           onClick={() => setActiveTab('habits')}
-          className="glass-panel glass-panel-hover rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
+          className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex justify-between items-start">
@@ -517,10 +525,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <span className="text-[10px] text-cyber-muted flex items-center gap-1 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyber-yellow"></span>
-            Unlock next level at 500 XP
-          </span>
+          <div className="flex justify-between items-center mt-3">
+            <span className="text-[10px] text-cyber-muted flex items-center gap-1 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyber-yellow"></span>
+              Unlock next level at 500 XP
+            </span>
+            <Sparkline data={[2, 3, 3, 4, 4, 5, 4]} color="var(--cyber-yellow)" width={80} height={20} />
+          </div>
         </div>
 
       </div>

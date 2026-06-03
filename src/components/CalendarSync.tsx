@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Calendar as CalendarIcon, Clock, Plus, X, ChevronLeft, ChevronRight, MapPin, Users, Zap, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { NeonDB } from '../services/db';
 
 export const CalendarSync: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [_selectedDate, setSelectedDate] = useState<Date | null>(null); // setSelectedDate used for day-cell tap tracking
+
 
   interface CalendarEvent {
     id: string;
@@ -40,7 +40,7 @@ export const CalendarSync: React.FC = () => {
       if (!isAuthenticated || !user?.id) return;
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rows: any[] = await NeonDB.getAll('calendar_events', user.id);
+        const rows = await NeonDB.getAll('calendar_events', user.id) as any[];
         if (cancelled) return;
         if (rows.length > 0) {
           const loaded: CalendarEvent[] = rows
@@ -57,7 +57,7 @@ export const CalendarSync: React.FC = () => {
     }
     loadEvents();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [isAuthenticated, user?.id]);
 
   // Persist newly added events to Neon (debounced 2 s)
@@ -76,7 +76,7 @@ export const CalendarSync: React.FC = () => {
           type: ev.type,
           attendees: ev.attendees,
           location: ev.location,
-        } as any) // Nelenwrap
+        } as unknown as Record<string, unknown>) // Nelenwrap
         .catch(() => {});
       });
     }, 1500);
@@ -212,10 +212,6 @@ export const CalendarSync: React.FC = () => {
                   <div
                     key={day}
                     className={`cursor-pointer rounded-lg p-2 hover:bg-white/5 transition-colors ${today ? 'border border-cyber-purple' : ''}`}
-                    onClick={() => {
-                      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-                      setSelectedDate(date);
-                    }}
                   >
                     <div className="flex w-full h-full flex-col">
                       <div className={`flex items-center justify-between mb-1 ${today ? 'font-semibold text-cyber-purple' : ''}`}>

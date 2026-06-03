@@ -1,18 +1,20 @@
 import React from 'react';
 import { 
   LayoutDashboard, ShieldCheck, Activity, CheckSquare, Calendar, 
-  DollarSign, FileText, MessageSquare, Award, BookOpen, 
+  DollarSign, FileText, Award, BookOpen, 
   Home, MessageCircle, HardDrive, Zap, ShieldAlert, 
-  Dumbbell, Fingerprint, BarChart3, ChevronLeft, ChevronRight
+  Dumbbell, Fingerprint, BarChart3, ChevronLeft, ChevronRight,
+  Brain, Globe, Network
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onItemClick?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onItemClick }) => {
   const [collapsed, setCollapsed] = React.useState(false);
   const { user, isAuthenticated } = useAuth();
 
@@ -21,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       title: "Core",
       items: [
         { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, color: 'text-cyber-purple' },
-        { id: 'ai-copilot', name: 'AI Copilot', icon: MessageSquare, color: 'text-cyber-blue' },
+        { id: 'ai-copilot', name: '"TOM" Neural Core', icon: Brain, color: 'text-cyber-purple' },
         { id: 'analytics', name: 'Life Analytics', icon: BarChart3, color: 'text-cyber-cyan' },
       ]
     },
@@ -54,6 +56,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     {
       title: "Connected Life",
       items: [
+        { id: 'swarm-dynamics', name: 'Swarm Dynamics', icon: Network, color: 'text-cyber-purple' },
+        { id: 'world-monitor', name: 'World Monitor', icon: Globe, color: 'text-cyber-cyan' },
         { id: 'smarthome', name: 'Smart Home IoT', icon: Home, color: 'text-cyber-orange' },
         { id: 'social', name: 'Social Hub', icon: MessageCircle, color: 'text-cyber-blue' },
         { id: 'automation', name: 'Automation Engine', icon: Zap, color: 'text-cyber-green' },
@@ -113,16 +117,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
-                  <li key={item.id}>
+                  <li key={item.id} className="relative">
+                    {/* Active glowing indicator bar */}
+                    {isActive && (
+                      <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-cyber-purple rounded-r shadow-neon-purple animate-pulse z-10" />
+                    )}
                     <button
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        if (onItemClick) onItemClick();
+                      }}
+                      title={collapsed ? item.name : undefined}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer btn-press ${
                         isActive 
-                          ? 'bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/10 border border-cyber-purple/30 text-white shadow-neon-purple/10' 
+                          ? 'bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/10 border border-cyber-purple/25 text-white shadow-neon-purple/5' 
                           : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
                       }`}
                     >
-                      <Icon className={`${item.color} ${isActive ? 'scale-110' : ''} shrink-0`} size={20} />
+                      <Icon className={`${item.color} ${isActive ? 'scale-110' : ''} shrink-0 icon-hover`} size={20} />
                       {!collapsed && (
                         <span className="text-sm font-medium tracking-wide truncate">{item.name}</span>
                       )}

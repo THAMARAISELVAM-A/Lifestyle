@@ -79,7 +79,7 @@ export const HealthMonitor: React.FC<HealthMonitorProps> = ({ healthToday, logWa
         {/* Metric widgets */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Card 1: Sleep */}
-          <div className="glass-panel rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
+          <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] text-cyber-muted font-mono uppercase tracking-wider">Circadian Cycle</span>
@@ -102,7 +102,7 @@ export const HealthMonitor: React.FC<HealthMonitorProps> = ({ healthToday, logWa
           </div>
 
           {/* Card 2: Steps */}
-          <div className="glass-panel rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
+          <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] text-cyber-muted font-mono uppercase tracking-wider">Calisthenic Steps</span>
@@ -125,7 +125,7 @@ export const HealthMonitor: React.FC<HealthMonitorProps> = ({ healthToday, logWa
           </div>
 
           {/* Card 3: Calories */}
-          <div className="glass-panel rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
+          <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] text-cyber-muted font-mono uppercase tracking-wider">Metabolism Tracker</span>
@@ -148,7 +148,7 @@ export const HealthMonitor: React.FC<HealthMonitorProps> = ({ healthToday, logWa
           </div>
 
           {/* Card 4: Heart Rate */}
-          <div className="glass-panel rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
+          <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border flex flex-col justify-between shadow-glass">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] text-cyber-muted font-mono uppercase tracking-wider">Biometrics ECG</span>
@@ -185,7 +185,7 @@ export const HealthMonitor: React.FC<HealthMonitorProps> = ({ healthToday, logWa
         </div>
 
         {/* Water tracker glass visualizer column */}
-        <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between">
+        <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div>
               <span className="text-[10px] text-cyber-muted font-mono uppercase tracking-wider">Hydration Logs</span>
@@ -233,7 +233,7 @@ export const HealthMonitor: React.FC<HealthMonitorProps> = ({ healthToday, logWa
         </div>
 
         {/* Mood Log & Medication details */}
-        <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass md:col-span-1">
+        <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass md:col-span-1">
           <div className="flex items-center gap-2 mb-4">
             <Smile className="text-cyber-yellow" />
             <h3 className="font-semibold text-lg text-slate-100">Cognitive Mood Tracker</h3>
@@ -265,7 +265,7 @@ export const HealthMonitor: React.FC<HealthMonitorProps> = ({ healthToday, logWa
         </div>
 
         {/* Medication Reminders */}
-        <div className="glass-panel rounded-2xl p-6 border border-cyber-border shadow-glass lg:col-span-2">
+        <div className="glass-panel glass-panel-glow rounded-2xl p-6 border border-cyber-border shadow-glass lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList className="text-cyber-cyan" />
             <h3 className="font-semibold text-lg text-slate-100">Scheduled Prescriptions & Meds</h3>

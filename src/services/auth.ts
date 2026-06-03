@@ -21,16 +21,45 @@ export class AuthService {
     }
   })();
 
+  private static guestProfile: UserProfile | null = (() => {
+    try {
+      const saved = localStorage.getItem('mylife_guest');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  static isGuest(): boolean {
+    return !!this.guestProfile;
+  }
+
+  static setGuest(): void {
+    this.guestProfile = {
+      id: 'guest',
+      name: 'Offline Terminal',
+      email: 'guest@mylife.local',
+      role: 'guest',
+      createdAt: new Date().toISOString()
+    };
+    localStorage.setItem('mylife_guest', JSON.stringify(this.guestProfile));
+  }
+
+  static clearGuest(): void {
+    this.guestProfile = null;
+    localStorage.removeItem('mylife_guest');
+  }
+
   static getJwt(): string | null {
     return this.jwtToken;
   }
 
   static getUser(): UserProfile | null {
-    return this.userProfile;
+    return this.userProfile || this.guestProfile;
   }
 
   static isAuthenticated(): boolean {
-    return !!this.jwtToken && !!this.userProfile;
+    return (!!this.jwtToken && !!this.userProfile) || !!this.guestProfile;
   }
 
   /**
@@ -81,7 +110,6 @@ export class AuthService {
         return { success: false, error: data.message || 'Registration failed' };
       }
 
-      // Successful registration sets session cookie and returns user
       if (data.user) {
         this.userProfile = {
           id: data.user.id,
@@ -92,15 +120,14 @@ export class AuthService {
         };
         localStorage.setItem('mylife_user', JSON.stringify(this.userProfile));
         
-        // Fetch the JWT token immediately
         await this.refreshJwt();
         return { success: true };
       }
 
       return { success: false, error: 'User data missing from response' };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Registration error:', e);
-      return { success: false, error: e.message || 'Connection error' };
+      return { success: false, error: e instanceof Error ? e.message : 'Connection error' };
     }
   }
 
@@ -134,15 +161,14 @@ export class AuthService {
         };
         localStorage.setItem('mylife_user', JSON.stringify(this.userProfile));
         
-        // Fetch the JWT token immediately
         const token = await this.refreshJwt();
         return token ? { success: true } : { success: false, error: 'Failed to retrieve JWT' };
       }
 
       return { success: false, error: 'User data missing from response' };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Sign-in error:', e);
-      return { success: false, error: e.message || 'Connection error' };
+      return { success: false, error: e instanceof Error ? e.message : 'Connection error' };
     }
   }
 
@@ -151,6 +177,7 @@ export class AuthService {
    */
   static async signOut(): Promise<void> {
     try {
+      this.clearGuest();
       await fetch(`${AUTH_BASE_URL}/sign-out`, {
         method: 'POST',
         credentials: 'include'
@@ -169,6 +196,9 @@ export class AuthService {
    * Check if a valid session exists in background
    */
   static async checkSession(): Promise<boolean> {
+    if (this.guestProfile) {
+      return true;
+    }
     try {
       const res = await fetch(`${AUTH_BASE_URL}/get-session`, {
         method: 'GET',
@@ -191,7 +221,6 @@ export class AuthService {
         }
       }
       
-      // If we reach here, session is invalid
       this.jwtToken = null;
       this.userProfile = null;
       localStorage.removeItem('mylife_jwt');

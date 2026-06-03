@@ -179,8 +179,7 @@ export const HabitTracker: React.FC = () => {
     async function loadGoals() {
       if (!isAuthenticated || !user?.id) return;
       try {
-        // @ts-expect-error DB service — goals table not yet in full type surface
-        const rows: any[] = await NeonDB.getAll('goals', user.id);
+        const rows = await NeonDB.getAll<Goal & { user_id: string }>('goals', user.id);
         if (cancelled) return;
         if (rows.length > 0) {
           setGoals(rows as Goal[]);
@@ -189,7 +188,7 @@ export const HabitTracker: React.FC = () => {
     }
     loadGoals();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [isAuthenticated, user?.id]);
 
   // Debounced persist → Neon DB (2 s after last mutation)
@@ -207,7 +206,7 @@ export const HabitTracker: React.FC = () => {
           unit: g.unit,
           streak: g.streak,
           xp_value: g.xpValue,
-        } as any) // Nelenwrap: goals table not yet in strict DB type enum
+        } as unknown as Record<string, unknown>) // Nelenwrap: goals table not yet in strict DB type enum
         .catch(() => {});
       });
     }, 2000);
@@ -313,7 +312,7 @@ export const HabitTracker: React.FC = () => {
           return (
             <div
               key={goal.id}
-              className="glass-panel rounded-2xl p-5 border border-cyber-border shadow-glass flex flex-col justify-between gap-4"
+              className="glass-panel glass-panel-glow rounded-2xl p-5 border border-cyber-border shadow-glass flex flex-col justify-between gap-4"
             >
               {/* ── top row ── */}
               <div className="flex items-start justify-between">
