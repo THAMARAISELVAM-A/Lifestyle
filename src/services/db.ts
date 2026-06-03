@@ -23,10 +23,22 @@ export type TableName =
   | 'knowledge_notes'
   | 'user_profiles';
 
-const sqlQuery = sql as any;
+
 
 async function rawQuery(queryText: string, params: unknown[] = []): Promise<any[]> {
-  return sqlQuery(queryText, params) as Promise<any[]>;
+  try {
+    const fn = (sql as any).query;
+    if (typeof fn === 'function') {
+      return await fn(queryText, params);
+    }
+    // Fallback for older neon versions that might not have .query
+    return await (sql as any)(queryText, params);
+  } catch (e: any) {
+    if (e.message?.includes('sql.query')) {
+      return await (sql as any).query(queryText, params);
+    }
+    throw e;
+  }
 }
 
 export class NeonDB {
