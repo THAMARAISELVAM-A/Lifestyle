@@ -47,7 +47,7 @@ export const fetchWeather = async (cities: {name: string, lat: number, lon: numb
 
 export const fetchWorldNews = async (): Promise<WorldEvent[]> => {
   try {
-    const res = await fetch('https://api.gdeltproject.org/api/v2/doc/doc?query=world%20crisis%20OR%20conflict%20OR%20geopolitical&mode=artlist&maxrecords=10&format=json');
+    const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.gdeltproject.org/api/v2/doc/doc?query=world%20crisis%20OR%20conflict%20OR%20geopolitical&mode=artlist&maxrecords=10&format=json'));
     const data = await res.json();
     const articles = data.articles || [];
     return articles.map((r: Record<string, unknown>) => ({

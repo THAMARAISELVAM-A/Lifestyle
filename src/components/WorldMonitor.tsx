@@ -380,7 +380,7 @@ const EarthquakeFeed = ({ earthquakes }: { earthquakes: EarthquakeData }) => {
           earthquakes.features.map(eq => (
             <div key={eq.id} className={`p-3 rounded-xl border flex items-center gap-3 transition-colors hover:bg-black/40 ${getMagBgColor(eq.properties.mag)}`}>
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold font-mono text-sm bg-black/50 border border-current shadow-glass ${getMagColor(eq.properties.mag)}`}>
-                {eq.properties.mag.toFixed(1)}
+                {(eq.properties.mag ?? 0).toFixed(1)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-mono font-bold text-white truncate group-hover:text-cyber-cyan transition-colors" title={eq.properties.place}>
@@ -393,7 +393,7 @@ const EarthquakeFeed = ({ earthquakes }: { earthquakes: EarthquakeData }) => {
                   </div>
                   <div className="flex items-center gap-1 text-[10px] text-cyber-muted font-mono">
                     <Layers className="w-3 h-3" />
-                    {eq.geometry.coordinates[2].toFixed(1)} km
+                    {(eq.geometry.coordinates[2] ?? 0).toFixed(1)} km
                   </div>
                 </div>
               </div>
@@ -439,14 +439,14 @@ const WeatherGrid = ({ weather }: { weather: WeatherData }) => {
                 <div className="mt-2 z-10">
                   <div className="flex items-baseline gap-1">
                     <span className="font-mono text-2xl font-bold text-white">
-                      {city.temperature !== undefined ? city.temperature.toFixed(1) : '--'}
+                      {city.temperature != null ? city.temperature.toFixed(1) : '--'}
                     </span>
                     <span className="font-mono text-xs text-cyber-blue">°C</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex items-center gap-1 text-[10px] font-mono text-cyber-muted">
                       <Wind className="w-3 h-3 text-cyber-cyan" />
-                      {city.windSpeed !== undefined ? city.windSpeed.toFixed(1) : '--'} km/h
+                      {city.windSpeed != null ? city.windSpeed.toFixed(1) : '--'} km/h
                     </div>
                   </div>
                 </div>
@@ -501,7 +501,7 @@ const CurrencyMonitor = ({ currency }: { currency: CurrencyData }) => {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-mono text-white text-sm font-bold group-hover:text-cyber-green transition-colors">
-                      {rate.toFixed(4)}
+                      {rate != null ? rate.toFixed(4) : '--'}
                     </span>
                     <span className="font-mono text-[9px] text-cyber-muted flex items-center gap-1">
                       {isUp ? <TrendingUp className="w-3 h-3 text-cyber-green" /> : <TrendingDown className="w-3 h-3 text-cyber-red" />}
@@ -738,7 +738,9 @@ const GlobalActivityTimeline = ({ earthquakes }: { earthquakes: EarthquakeData }
                   <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/90 border border-cyber-border text-white text-[10px] font-mono px-2 py-1 rounded whitespace-nowrap z-20">
                     {day.count} EVENTS
                     <br/>
-                    MAX MAG: {day.maxMag.toFixed(1)}
+                    <div className="text-[10px] text-cyber-red mt-2 font-mono">
+                      MAX MAG: {day.maxMag != null ? day.maxMag.toFixed(1) : '--'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -837,7 +839,7 @@ export const WorldMonitor: React.FC = () => {
   const fetchNews = async () => {
     addLog('info', 'SCANNING GLOBAL COMM FREQUENCIES...', 'GDELT');
     try {
-      const res = await fetch('https://api.gdeltproject.org/api/v2/doc/doc?query=world%20crisis&mode=artlist&maxrecords=10&format=json');
+      const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.gdeltproject.org/api/v2/doc/doc?query=world%20crisis&mode=artlist&maxrecords=10&format=json'));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setNews({ articles: data.articles || [], isLoading: false, error: null, lastUpdated: new Date() });
