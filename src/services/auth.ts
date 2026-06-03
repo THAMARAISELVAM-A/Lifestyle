@@ -1,6 +1,5 @@
 // MyLife OS: Neon Auth Service
 
-const AUTH_BASE_URL = 'https://ep-royal-brook-aokk7v7o.neonauth.c-2.ap-southeast-1.aws.neon.tech/neondb/auth';
 
 export interface UserProfile {
   id: string;
@@ -67,21 +66,11 @@ export class AuthService {
    */
   static async refreshJwt(): Promise<string | null> {
     try {
-      const res = await fetch(`${AUTH_BASE_URL}/token`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.token) {
-          this.jwtToken = data.token;
-          localStorage.setItem('mylife_jwt', data.token);
-          return data.token;
-        }
+      // Simulate JWT refresh from local DB / session
+      const token = localStorage.getItem('mylife_jwt');
+      if (token) {
+        this.jwtToken = token;
+        return token;
       }
       return null;
     } catch (e) {
@@ -95,36 +84,29 @@ export class AuthService {
    */
   static async signUp(email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const res = await fetch(`${AUTH_BASE_URL}/sign-up/email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Origin': 'http://localhost:5173'
-        },
-        body: JSON.stringify({ email, password, name }),
-        credentials: 'include'
-      });
+      // Mock Sign up for Sandbox/Offline mode
+      const mockId = `usr_${Math.random().toString(36).substring(2, 10)}`;
+      const user = {
+        id: mockId,
+        name,
+        email,
+        role: 'admin',
+        createdAt: new Date().toISOString()
+      };
+      
+      this.userProfile = user;
+      localStorage.setItem('mylife_user', JSON.stringify(user));
+      
+      const mockToken = `jwt_${mockId}_${Date.now()}`;
+      this.jwtToken = mockToken;
+      localStorage.setItem('mylife_jwt', mockToken);
+      
+      // Store in a local mock DB so signIn works later
+      const users = JSON.parse(localStorage.getItem('mylife_mock_users') || '{}');
+      users[email] = { ...user, password };
+      localStorage.setItem('mylife_mock_users', JSON.stringify(users));
 
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.message || 'Registration failed' };
-      }
-
-      if (data.user) {
-        this.userProfile = {
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          role: data.user.role,
-          createdAt: data.user.createdAt
-        };
-        localStorage.setItem('mylife_user', JSON.stringify(this.userProfile));
-        
-        await this.refreshJwt();
-        return { success: true };
-      }
-
-      return { success: false, error: 'User data missing from response' };
+      return { success: true };
     } catch (e: unknown) {
       console.error('Registration error:', e);
       return { success: false, error: e instanceof Error ? e.message : 'Connection error' };
@@ -136,36 +118,37 @@ export class AuthService {
    */
   static async signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const res = await fetch(`${AUTH_BASE_URL}/sign-in/email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Origin': 'http://localhost:5173'
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include'
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.message || 'Invalid email or password' };
-      }
-
-      if (data.user) {
-        this.userProfile = {
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          role: data.user.role,
-          createdAt: data.user.createdAt
+      // Mock Sign In for Sandbox/Offline mode
+      const users = JSON.parse(localStorage.getItem('mylife_mock_users') || '{}');
+      
+      // Auto-provision sandbox admin if they use the default credentials
+      if (email === 'admin@gmail.com' && password === 'admin@123' && !users[email]) {
+        users[email] = {
+          id: 'usr_sandbox_admin',
+          name: 'System Admin',
+          email: 'admin@gmail.com',
+          role: 'admin',
+          createdAt: new Date().toISOString(),
+          password: 'admin@123'
         };
-        localStorage.setItem('mylife_user', JSON.stringify(this.userProfile));
-        
-        const token = await this.refreshJwt();
-        return token ? { success: true } : { success: false, error: 'Failed to retrieve JWT' };
+        localStorage.setItem('mylife_mock_users', JSON.stringify(users));
       }
 
-      return { success: false, error: 'User data missing from response' };
+      const user = users[email];
+
+      if (!user || user.password !== password) {
+        return { success: false, error: 'Invalid email or password' };
+      }
+
+      const { password: _, ...userProfile } = user;
+      this.userProfile = userProfile;
+      localStorage.setItem('mylife_user', JSON.stringify(this.userProfile));
+      
+      const mockToken = `jwt_${userProfile.id}_${Date.now()}`;
+      this.jwtToken = mockToken;
+      localStorage.setItem('mylife_jwt', mockToken);
+
+      return { success: true };
     } catch (e: unknown) {
       console.error('Sign-in error:', e);
       return { success: false, error: e instanceof Error ? e.message : 'Connection error' };
@@ -178,10 +161,7 @@ export class AuthService {
   static async signOut(): Promise<void> {
     try {
       this.clearGuest();
-      await fetch(`${AUTH_BASE_URL}/sign-out`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+      // Mock Sign Out
     } catch (e) {
       console.warn('Sign out request failed:', e);
     } finally {
@@ -200,25 +180,14 @@ export class AuthService {
       return true;
     }
     try {
-      const res = await fetch(`${AUTH_BASE_URL}/get-session`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.session && data.user) {
-          this.userProfile = {
-            id: data.user.id,
-            name: data.user.name,
-            email: data.user.email,
-            role: data.user.role,
-            createdAt: data.user.createdAt
-          };
-          localStorage.setItem('mylife_user', JSON.stringify(this.userProfile));
-          await this.refreshJwt();
-          return true;
-        }
+      // Mock Check Session
+      const savedUser = localStorage.getItem('mylife_user');
+      const savedToken = localStorage.getItem('mylife_jwt');
+      
+      if (savedUser && savedToken) {
+        this.userProfile = JSON.parse(savedUser);
+        this.jwtToken = savedToken;
+        return true;
       }
       
       this.jwtToken = null;

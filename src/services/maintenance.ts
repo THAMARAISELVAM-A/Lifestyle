@@ -77,11 +77,11 @@ export class AutonomousEngine {
 
         // If FPS drops below threshold, trigger automatic canvas rendering optimization
         if (this.avgFps < 42 && !this.isOptimizedMode) {
-          console.warn(`⚠️ [Autonomous Engine] Low frame rate detected (${this.avgFps} FPS). Triggering rendering optimization...`);
+          console.debug(`⚠️ [Autonomous Engine] Low frame rate detected (${this.avgFps} FPS). Triggering rendering optimization...`);
           this.isOptimizedMode = true;
           window.dispatchEvent(new CustomEvent('mylife_optimize_rendering', { detail: { optimize: true } }));
         } else if (this.avgFps >= 55 && this.isOptimizedMode) {
-          console.log(`⚙️ [Autonomous Engine] Frame rate recovered (${this.avgFps} FPS). Restoring high quality visuals.`);
+          console.debug(`⚙️ [Autonomous Engine] Frame rate recovered (${this.avgFps} FPS). Restoring high quality visuals.`);
           this.isOptimizedMode = false;
           window.dispatchEvent(new CustomEvent('mylife_optimize_rendering', { detail: { optimize: false } }));
         }
@@ -98,7 +98,7 @@ export class AutonomousEngine {
    */
   private static async runMaintenanceCycle(): Promise<void> {
     try {
-      console.log('🤖 [Autonomous Engine] Commencing system health audit...');
+      console.debug('🤖 [Autonomous Engine] Commencing system health audit...');
 
       // A. Synchronize any pending offline transactions
       await this.triggerBackgroundSync();

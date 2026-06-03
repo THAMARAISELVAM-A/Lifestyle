@@ -10,6 +10,7 @@ import { SmartHome } from './components/SmartHome';
 import { LifeAnalytics } from './components/LifeAnalytics';
 import { AuthModal } from './components/AuthModal';
 import { CanvasBackground } from './components/CanvasBackground';
+import { NeuralTerminal } from './components/NeuralTerminal';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useToast } from './hooks/useToast';
@@ -63,12 +64,21 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = React.useState(false);
   const [dbConnected, setDbConnected] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<string>('dashboard');
+  const [isGlitching, setIsGlitching] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsGlitching(true);
+    const timer = setTimeout(() => setIsGlitching(false), 300);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
+
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   
   // Interactive UI overlay states
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = React.useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = React.useState(false);
 
   // Dynamic real-time OS load states
   const [systemCpu, setSystemCpu] = React.useState(24);
@@ -439,6 +449,10 @@ export default function App() {
         e.preventDefault();
         setIsCommandPaletteOpen(prev => !prev);
       }
+      if (e.key === '`' || e.key === '~') {
+        e.preventDefault();
+        setIsTerminalOpen(prev => !prev);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -453,6 +467,8 @@ export default function App() {
       
       {/* Interactive canvas background */}
       <CanvasBackground />
+
+      <NeuralTerminal isOpen={isTerminalOpen} onClose={() => setIsTerminalOpen(false)} />
 
       {/* Screen-wide Toast notification portal */}
       <Toast toasts={toasts} onRemove={removeToast} />
@@ -704,7 +720,7 @@ export default function App() {
         </header>
 
         {/* Main Content scrollable panel (with animation keys) */}
-        <main key={activeTab} className="flex-1 overflow-y-auto p-6 page-transition">
+        <main key={activeTab} className={`flex-1 overflow-y-auto p-6 page-transition ${isGlitching ? 'animate-glitch' : ''}`}>
           <Suspense fallback={<LoadingFallback />}>
             {activeTab === 'dashboard' && (
               <Dashboard 

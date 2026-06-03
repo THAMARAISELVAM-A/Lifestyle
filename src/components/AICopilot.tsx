@@ -3,6 +3,7 @@ import { Send, Sparkles, User, Brain, Cpu, Zap, Network, RefreshCw, Check, Activ
 import { AutonomousEngine } from '../services/maintenance';
 import { NeonDB } from '../services/db';
 import type { Task, Expense, HealthMetric, SmartDevice, Goal, AutomationRule } from '../types';
+import { useCyberAudio } from '../hooks/useCyberAudio';
 
 interface ChatMessage {
   sender: 'ai' | 'user';
@@ -40,6 +41,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({
   goals,
   onRuleAdded
 }) => {
+  const { playHover, playClick, playEvolutionDrone } = useCyberAudio();
   const [messages, setMessages] = useState<ChatMessage[]>([
     { 
       sender: 'ai', 
@@ -161,6 +163,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({
   // Main Self-Evolution compiler logic
   const triggerSelfEvolution = useCallback(async () => {
     if (isEvolving) return;
+    playEvolutionDrone();
     setIsEvolving(true);
     setEvolutionLogs(["[INIT] Connection opened to TOM Autonomous Evolution protocol.", "[SCAN] Telemetry modules starting scan..."]);
 
@@ -314,7 +317,8 @@ export const AICopilot: React.FC<AICopilotProps> = ({
     activeGoalsCount, 
     localTemp,
     onRuleAdded, 
-    onTriggerAction
+    onTriggerAction,
+    playEvolutionDrone
   ]);
 
   const handleSend = useCallback((textToSend: string) => {
@@ -510,7 +514,11 @@ export const AICopilot: React.FC<AICopilotProps> = ({
                   Telemetry scanned. TOM is ready to evolve rules based on user metrics data.
                 </p>
                 <button
-                  onClick={triggerSelfEvolution}
+                  onClick={() => {
+                    playClick();
+                    triggerSelfEvolution();
+                  }}
+                  onMouseEnter={playHover}
                   disabled={isEvolving}
                   className="w-full py-1.5 bg-cyber-pink/15 hover:bg-cyber-pink/25 border border-cyber-pink/30 hover:border-cyber-pink/50 text-cyber-pink rounded-lg font-bold text-[10px] tracking-wider uppercase font-mono cursor-pointer transition-all flex items-center justify-center gap-1"
                 >
@@ -610,7 +618,8 @@ export const AICopilot: React.FC<AICopilotProps> = ({
               {presets.map((preset, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSend(preset.prompt)}
+                  onClick={() => { playClick(); handleSend(preset.prompt); }}
+                  onMouseEnter={playHover}
                   disabled={isTyping || isEvolving}
                   className="text-left text-xs p-2.5 rounded-xl bg-white/5 hover:bg-cyber-purple/10 border border-white/5 hover:border-cyber-purple/20 transition-all text-slate-300 hover:text-white cursor-pointer truncate font-mono disabled:opacity-50"
                 >
@@ -621,7 +630,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({
           </div>
 
           {/* Input control form */}
-          <form onSubmit={(e) => { e.preventDefault(); handleSend(inputVal); }} className="p-4 bg-black/45 border-t border-cyber-border flex gap-2">
+          <form onSubmit={(e) => { e.preventDefault(); playClick(); handleSend(inputVal); }} className="p-4 bg-black/45 border-t border-cyber-border flex gap-2">
             <input
               type="text"
               placeholder="Ask TOM neural engine to evolve, reinforce nodes, adjust weights or log biometrics..."
@@ -632,6 +641,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({
             />
             <button
               type="submit"
+              onMouseEnter={playHover}
               disabled={isTyping || isEvolving || !inputVal.trim()}
               className="px-4 bg-cyber-purple/20 hover:bg-cyber-purple/30 border border-cyber-purple/40 text-white rounded-xl cursor-pointer flex items-center justify-center transition-all disabled:opacity-50"
             >
