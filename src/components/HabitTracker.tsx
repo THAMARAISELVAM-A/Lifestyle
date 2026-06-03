@@ -1,8 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
+  Award,
   Flame,
   Target,
   Zap,
+  Star,
+  Crown,
+  Trophy,
   Plus,
   X,
   BarChart3,
@@ -10,6 +14,7 @@ import {
   BookOpen,
   Dumbbell,
   Smile,
+  Trash2,
   Terminal
 } from 'lucide-react';
 import type { Goal } from '../types';

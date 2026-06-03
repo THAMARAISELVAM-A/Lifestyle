@@ -461,8 +461,8 @@ export default function App() {
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   return (
-    <div className="flex min-h-screen bg-cyber-bg overflow-x-hidden text-slate-100 relative hologram-scanline">
-      {/* Animated tactical grid background */}
+    <div className="flex min-h-screen bg-cyber-bg overflow-x-hidden text-slate-100 relative">
+      {/* Animated dot grid background */}
       <div className="dot-grid" />
       
       {/* Interactive canvas background */}

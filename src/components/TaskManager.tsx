@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Plus, Play, Pause, 
+  CheckSquare, Plus, Clock, Play, Pause, 
   Trash2, BrainCircuit, Terminal, Cpu, Network, Zap, Server, Activity, Target
 } from 'lucide-react';
 import type { Task } from '../types';

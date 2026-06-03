@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Clock, ShieldAlert, Zap, Globe, Network } from 'lucide-react';
+import { Clock, ShieldAlert, Zap } from 'lucide-react';
 import type { Task, Goal, HealthMetric, SmartDevice } from '../types';
 
 interface DashboardProps {
@@ -336,35 +336,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {isOptimizing ? 'Optimizing OS...' : 'Optimize LifeOS'}
             </button>
           </div>
-        </div>
-
-        {/* Quick Launch Apps */}
-        <div className="absolute top-28 right-6 flex flex-col gap-3 pointer-events-auto z-20">
-          <button 
-            onClick={() => setActiveTab('world-monitor')}
-            className="flex items-center justify-start gap-3 w-48 px-4 py-3 bg-black/60 border border-cyber-cyan/30 hover:border-cyber-cyan rounded-xl text-cyber-cyan font-mono text-xs hover:bg-cyber-cyan/10 hover:scale-105 transition-all shadow-neon-cyan/20 cursor-pointer backdrop-blur-md group"
-          >
-            <div className="w-8 h-8 rounded bg-cyber-cyan/20 flex items-center justify-center group-hover:animate-spin">
-              <Globe size={16} />
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="font-bold tracking-widest text-[10px]">GLOBAL INTEL</span>
-              <span className="text-[9px] text-cyber-cyan/70">World Monitor</span>
-            </div>
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('swarm-dynamics')}
-            className="flex items-center justify-start gap-3 w-48 px-4 py-3 bg-black/60 border border-cyber-green/30 hover:border-cyber-green rounded-xl text-cyber-green font-mono text-xs hover:bg-cyber-green/10 hover:scale-105 transition-all shadow-neon-green/20 cursor-pointer backdrop-blur-md group"
-          >
-            <div className="w-8 h-8 rounded bg-cyber-green/20 flex items-center justify-center group-hover:pulse">
-              <Network size={16} />
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="font-bold tracking-widest text-[10px]">SWARM AI</span>
-              <span className="text-[9px] text-cyber-green/70">MiroShark Agents</span>
-            </div>
-          </button>
         </div>
 
         {/* Bottom Metrics Overlay */}
