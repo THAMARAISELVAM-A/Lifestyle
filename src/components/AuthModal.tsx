@@ -1,6 +1,6 @@
 import React from 'react';
 import { AuthService } from '../services/auth';
-import { ShieldCheck, Mail, Lock, User, Loader2, Sparkles } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, User, Loader2, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
   onSuccess: () => void;
@@ -15,6 +15,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess, onClose, canCan
   const [name, setName] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,14 +161,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess, onClose, canCan
                 <Lock size={16} />
               </span>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                className="w-full pl-10 pr-4 py-2.5 bg-black/30 border border-cyber-border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyber-purple focus:ring-1 focus:ring-cyber-purple/30 transition-all font-sans"
+                className="w-full pl-10 pr-12 py-2.5 bg-black/30 border border-cyber-border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyber-purple focus:ring-1 focus:ring-cyber-purple/30 transition-all font-sans"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-cyber-purple transition-colors cursor-pointer"
+                title={showPassword ? "Hide Password" : "Show Password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
